@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Play } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -11,12 +11,23 @@ import { usePlayer } from "@/context/PlayerContext";
 import { useAudioPlayer } from "@/context/AudioPlayerContext";
 import Badge from "@/components/ui/Badge";
 
-import type { Channel } from "@/types/channel";
+type Channel = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  longDescription: string;
+  image: string;
+  streamUrl: string;
+  duration: string;
+  tracks: number;
+  featured: boolean;
+  perfectFor: string[];
+  tags: string[];
+};
 
 export default function AtmosphaereDetailPage() {
   const params = useParams();
-  const router = useRouter();
-
   const slug = params.slug as string;
 
   const {
@@ -24,9 +35,7 @@ export default function AtmosphaereDetailPage() {
     setCurrentChannel,
   } = usePlayer();
 
-  const {
-    play,
-  } = useAudioPlayer();
+  const { play } = useAudioPlayer();
 
   const [channel, setChannel] = useState<Channel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,7 +87,6 @@ export default function AtmosphaereDetailPage() {
     if (!channel) return;
 
     setCurrentChannel(channel);
-
     await play();
   };
 
@@ -113,7 +121,6 @@ export default function AtmosphaereDetailPage() {
 
   return (
     <main className="min-h-screen pb-40">
-
       <div className="px-12 pt-10">
         <Link
           href="/dashboard/atmosphaeren"
@@ -125,13 +132,9 @@ export default function AtmosphaereDetailPage() {
       </div>
 
       <section className="mx-auto mt-10 max-w-7xl px-12">
-
         <div className="grid gap-12 lg:grid-cols-2">
-
           <div className="relative overflow-hidden rounded-[32px] border border-[#3A2B22]">
-
             <div className="relative aspect-[4/3]">
-
               <Image
                 src={channel.image}
                 alt={channel.title}
@@ -148,13 +151,10 @@ export default function AtmosphaereDetailPage() {
                   ON AIR
                 </Badge>
               </div>
-
             </div>
-
           </div>
 
           <div className="flex flex-col justify-center">
-
             <div className="flex flex-wrap gap-2">
               {channel.tags.map((tag) => (
                 <Badge
@@ -175,7 +175,6 @@ export default function AtmosphaereDetailPage() {
             </p>
 
             <div className="mt-8 grid grid-cols-2 gap-4">
-
               <div className="rounded-2xl border border-[#3A2B22] bg-[#171311] p-5">
                 <p className="text-sm text-[#8D7B68]">
                   Länge
@@ -195,7 +194,6 @@ export default function AtmosphaereDetailPage() {
                   {channel.tracks}
                 </p>
               </div>
-
             </div>
 
             <button
@@ -212,13 +210,10 @@ export default function AtmosphaereDetailPage() {
                 ? "Jetzt läuft"
                 : "Jetzt abspielen"}
             </button>
-
           </div>
-
         </div>
 
         <div className="mt-16 max-w-4xl">
-
           <h2 className="text-3xl font-bold text-[#F5E9D8]">
             Über diese Atmosphäre
           </h2>
@@ -228,13 +223,11 @@ export default function AtmosphaereDetailPage() {
           </p>
 
           <div className="mt-10">
-
             <p className="text-sm uppercase tracking-[0.25em] text-[#8D7B68]">
               Perfekt für
             </p>
 
             <div className="mt-4 flex flex-wrap gap-3">
-
               {channel.perfectFor.map((item) => (
                 <span
                   key={item}
@@ -243,15 +236,10 @@ export default function AtmosphaereDetailPage() {
                   {item}
                 </span>
               ))}
-
             </div>
-
           </div>
-
         </div>
-
       </section>
-
     </main>
   );
 }
