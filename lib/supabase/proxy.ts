@@ -1,5 +1,4 @@
 import { createServerClient } from "@supabase/ssr";
-
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
@@ -17,11 +16,9 @@ export async function updateSession(request: NextRequest) {
         },
 
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(
-            ({ name, value }) => {
-              request.cookies.set(name, value);
-            }
-          );
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
 
           supabaseResponse = NextResponse.next({
             request,
@@ -52,20 +49,31 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Stripe Webhook darf ohne Login aufgerufen werden.
-  if (pathname === "/api/stripe/webhook") {
+  const publicPaths = [
+    "/",
+    "/login",
+    "/register",
+    "/auth",
+    "/landing",
+    "/api/stripe/webhook",
+  ];
+
+  const isPublicPath =
+    publicPaths.some(
+      (path) =>
+        pathname === path ||
+        pathname.startsWith(`${path}/`)
+    );
+
+  if (isPublicPath) {
     return supabaseResponse;
   }
 
-  if (
-    !session &&
-    !pathname.startsWith("/login") &&
-    !pathname.startsWith("/register") &&
-    !pathname.startsWith("/auth")
-  ) {
+  if (!session) {
     const url = request.nextUrl.clone();
 
     url.pathname = "/login";
+    url.search = "";
 
     return NextResponse.redirect(url);
   }
