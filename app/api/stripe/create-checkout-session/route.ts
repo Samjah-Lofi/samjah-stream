@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+
 import { createClient } from "@/lib/supabase/server";
 
 const stripe = new Stripe(
@@ -15,60 +16,129 @@ export async function POST() {
       error: userError,
     } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: "Nicht eingeloggt." },
-        { status: 401 }
-      );
-    }
-
-    const { data: subscription, error } =
-      await supabase
-        .from("subscriptions")
-        .select("stripe_customer_id, plan, status")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-    if (error) {
+    if (userError) {
       console.error(
-        "ABO KANN NICHT GELADEN WERDEN:",
-        error
+        "CHECKOUT USER FEHLER:",
+        userError
       );
 
       return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
+        {
+          error: userError.message,
+        },
+        {
+          status: 401,
+        }
       );
     }
 
-    if (!subscription?.stripe_customer_id) {
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: "Nicht eingeloggt.",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const priceId =
+      process.env.STRIPE_PREMIUM_PRICE_ID;
+
+    if (!priceId) {
+      console.error(
+        "STRIPE_PREMIUM_PRICE_ID fehlt."
+      );
+
       return NextResponse.json(
         {
           error:
-            "Keine Stripe Kunden-ID für diesen Account gefunden.",
+            "STRIPE_PREMIUM_PRICE_ID fehlt.",
         },
-        { status: 400 }
+        {
+          status: 500,
+        }
       );
     }
 
     const origin =
       process.env.NEXT_PUBLIC_SITE_URL ||
-      "http://localhost:3000";
+      "https://samjah-stream.vercel.app";
 
-    const portalSession =
-      await stripe.billingPortal.sessions.create({
-        customer:
-          subscription.stripe_customer_id,
-        return_url:
-          `${origin}/dashboard/konto`,
+    console.log(
+      "STRIPE CHECKOUT USER:",
+      user.id
+    );
+
+    console.log(
+      "STRIPE CHECKOUT EMAIL:",
+      user.email || "keine E-Mail"
+    );
+
+    console.log(
+      "STRIPE CHECKOUT PRICE:",
+      priceId
+    );
+
+    const checkoutSession =
+      await stripe.checkout.sessions.create({
+        mode: "subscription",
+
+        customer_email:
+          user.email || undefined,
+
+        client_reference_id: user.id,
+
+        metadata: {
+          user_id: user.id,
+        },
+
+        subscription_data: {
+          metadata: {
+            user_id: user.id,
+          },
+        },
+
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+
+        success_url:
+          `${origin}/dashboard/abo/erfolg?session_id={CHECKOUT_SESSION_ID}`,
+
+        cancel_url:
+          `${origin}/dashboard/abo`,
+
+        allow_promotion_codes: true,
       });
 
+    console.log(
+      "STRIPE CHECKOUT ERSTELLT:",
+      checkoutSession.id
+    );
+
+    if (!checkoutSession.url) {
+      return NextResponse.json(
+        {
+          error:
+            "Stripe hat keine Checkout URL zurückgegeben.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
     return NextResponse.json({
-      url: portalSession.url,
+      url: checkoutSession.url,
     });
   } catch (error) {
     console.error(
-      "STRIPE PORTAL FEHLER:",
+      "STRIPE CHECKOUT FEHLER:",
       error
     );
 
@@ -77,9 +147,11 @@ export async function POST() {
         error:
           error instanceof Error
             ? error.message
-            : "Aboverwaltung konnte nicht geöffnet werden.",
+            : "Checkout konnte nicht erstellt werden.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
