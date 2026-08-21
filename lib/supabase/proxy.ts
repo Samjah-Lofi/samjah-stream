@@ -2,8 +2,17 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+
+  requestHeaders.set(
+    "x-pathname",
+    request.nextUrl.pathname
+  );
+
   let supabaseResponse = NextResponse.next({
-    request,
+    request: {
+      headers: requestHeaders,
+    },
   });
 
   const supabase = createServerClient(
@@ -16,12 +25,16 @@ export async function updateSession(request: NextRequest) {
         },
 
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
+          cookiesToSet.forEach(
+            ({ name, value }) => {
+              request.cookies.set(name, value);
+            }
+          );
 
           supabaseResponse = NextResponse.next({
-            request,
+            request: {
+              headers: requestHeaders,
+            },
           });
 
           cookiesToSet.forEach(
@@ -49,31 +62,19 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  const publicPaths = [
-    "/",
-    "/login",
-    "/register",
-    "/auth",
-    "/landing",
-    "/api/stripe/webhook",
-  ];
-
-  const isPublicPath =
-    publicPaths.some(
-      (path) =>
-        pathname === path ||
-        pathname.startsWith(`${path}/`)
-    );
-
-  if (isPublicPath) {
+  if (pathname === "/api/stripe/webhook") {
     return supabaseResponse;
   }
 
-  if (!session) {
+  if (
+    !session &&
+    !pathname.startsWith("/login") &&
+    !pathname.startsWith("/register") &&
+    !pathname.startsWith("/auth")
+  ) {
     const url = request.nextUrl.clone();
 
     url.pathname = "/login";
-    url.search = "";
 
     return NextResponse.redirect(url);
   }
