@@ -1,0 +1,231 @@
+"use client";
+
+import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
+export default function LoginPage() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (loading) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const supabase = createClient();
+
+      console.log("Login wird gestartet...");
+      console.log("E-Mail:", email);
+
+      const loginPromise = supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(
+            new Error(
+              "Supabase antwortet nicht. Prüfe deine Supabase-URL und den Publishable Key in .env.local."
+            )
+          );
+        }, 10000);
+      });
+
+      const result = await Promise.race([
+        loginPromise,
+        timeoutPromise,
+      ]);
+
+      const { data, error: loginError } = result;
+
+      console.log("Supabase Antwort:", {
+        data,
+        error: loginError,
+      });
+
+      if (loginError) {
+        setError(
+          loginError.message ||
+            "E-Mail oder Passwort ist falsch."
+        );
+
+        return;
+      }
+
+      if (!data.session) {
+        setError(
+          "Anmeldung war nicht erfolgreich. Supabase hat keine Session zurückgegeben."
+        );
+
+        return;
+      }
+
+      console.log("Login erfolgreich.");
+      console.log("Session vorhanden:", !!data.session);
+
+      router.replace("/dashboard");
+      router.refresh();
+    } catch (error) {
+      console.error("Login Fehler:", error);
+
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError(
+          "Beim Anmelden ist ein unbekannter Fehler aufgetreten."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#0B0908] px-6 py-12 text-[#F5E9D8]">
+      <div className="w-full max-w-md">
+        <div className="mb-10 text-center">
+          <Link
+            href="/"
+            className="text-3xl font-black tracking-tight text-[#F5E9D8]"
+          >
+            SAMJAH
+          </Link>
+
+          <p className="mt-3 text-sm uppercase tracking-[0.35em] text-[#D89A3C]">
+            Crafted Soundscapes
+          </p>
+        </div>
+
+        <div className="rounded-[32px] border border-[#3A2B22] bg-[#171311] p-8 shadow-[0_30px_80px_rgba(0,0,0,.35)]">
+          <div className="mb-8">
+            <h1 className="text-3xl font-black">
+              Willkommen zurück
+            </h1>
+
+            <p className="mt-3 leading-7 text-[#BFAE98]">
+              Melde dich an und starte deine Musikwelten.
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleLogin}
+            className="space-y-5"
+          >
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-semibold text-[#D6C6B4]"
+              >
+                E-Mail
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
+                required
+                autoComplete="email"
+                placeholder="deine@email.de"
+                className="w-full rounded-2xl border border-[#3A2B22] bg-[#0F0C0A] px-5 py-4 text-[#F5E9D8] outline-none transition placeholder:text-[#6F6257] focus:border-[#D89A3C]"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-semibold text-[#D6C6B4]"
+              >
+                Passwort
+              </label>
+
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
+                required
+                autoComplete="current-password"
+                placeholder="Dein Passwort"
+                className="w-full rounded-2xl border border-[#3A2B22] bg-[#0F0C0A] px-5 py-4 text-[#F5E9D8] outline-none transition placeholder:text-[#6F6257] focus:border-[#D89A3C]"
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-2xl border border-red-900/50 bg-red-950/20 px-5 py-4 text-sm leading-6 text-red-300">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-2xl bg-[#D89A3C] px-6 py-4 font-bold text-[#120D09] transition hover:bg-[#E9B65A] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading
+                ? "Anmeldung läuft..."
+                : "Anmelden"}
+            </button>
+          </form>
+
+          <div className="my-8 flex items-center gap-4">
+            <div className="h-px flex-1 bg-[#2A201A]" />
+
+            <span className="text-sm text-[#6F6257]">
+              oder
+            </span>
+
+            <div className="h-px flex-1 bg-[#2A201A]" />
+          </div>
+
+          <p className="text-center text-[#BFAE98]">
+            Noch kein Konto?
+
+            <Link
+              href="/register"
+              className="ml-2 font-semibold text-[#D89A3C] transition hover:text-[#E9B65A]"
+            >
+              Jetzt registrieren
+            </Link>
+          </p>
+        </div>
+
+        <p className="mt-8 text-center text-xs leading-6 text-[#6F6257]">
+          Mit der Anmeldung akzeptierst du unsere
+
+          <Link
+            href="/agb"
+            className="mx-1 text-[#8D7B68] hover:text-[#D89A3C]"
+          >
+            AGB
+          </Link>
+
+          und
+
+          <Link
+            href="/datenschutz"
+            className="ml-1 text-[#8D7B68] hover:text-[#D89A3C]"
+          >
+            Datenschutzerklärung
+          </Link>
+          .
+        </p>
+      </div>
+    </main>
+  );
+}
