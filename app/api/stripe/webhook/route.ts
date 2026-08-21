@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY!
-);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,8 +16,7 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(request: Request) {
-  const signature =
-    request.headers.get("stripe-signature");
+  const signature = request.headers.get("stripe-signature");
 
   if (!signature) {
     return NextResponse.json(
@@ -28,8 +25,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const webhookSecret =
-    process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
     return NextResponse.json(
@@ -41,25 +37,20 @@ export async function POST(request: Request) {
   try {
     const body = await request.text();
 
-    const event =
-      stripe.webhooks.constructEvent(
-        body,
-        signature,
-        webhookSecret
-      );
-
-    console.log(
-      "STRIPE WEBHOOK:",
-      event.type
+    const event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      webhookSecret
     );
+
+    console.log("STRIPE WEBHOOK:", event.type);
 
     switch (event.type) {
       case "checkout.session.completed": {
         const checkoutSession =
           event.data.object as Stripe.Checkout.Session;
 
-        const userId =
-          checkoutSession.metadata?.user_id;
+        const userId = checkoutSession.metadata?.user_id;
 
         if (!userId) {
           console.error(
@@ -83,27 +74,23 @@ export async function POST(request: Request) {
             ? checkoutSession.subscription
             : null;
 
-        const { data, error } =
-          await supabaseAdmin
-            .from("subscriptions")
-            .upsert(
-              {
-                user_id: userId,
-                plan: "premium",
-                status: "active",
-                stripe_customer_id: customerId,
-                stripe_subscription_id:
-                  subscriptionId,
-                price_id:
-                  process.env.STRIPE_PREMIUM_PRICE_ID,
-                updated_at:
-                  new Date().toISOString(),
-              },
-              {
-                onConflict: "user_id",
-              }
-            )
-            .select();
+        const { data, error } = await supabaseAdmin
+          .from("subscriptions")
+          .upsert(
+            {
+              user_id: userId,
+              plan: "premium",
+              status: "active",
+              stripe_customer_id: customerId,
+              stripe_subscription_id: subscriptionId,
+              price_id: process.env.STRIPE_PREMIUM_PRICE_ID,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              onConflict: "user_id",
+            }
+          )
+          .select();
 
         if (error) {
           console.error(
@@ -121,10 +108,7 @@ export async function POST(request: Request) {
           );
         }
 
-        console.log(
-          "PREMIUM AKTIV:",
-          data
-        );
+        console.log("PREMIUM AKTIV:", data);
 
         break;
       }
@@ -133,44 +117,41 @@ export async function POST(request: Request) {
         const subscription =
           event.data.object as Stripe.Subscription;
 
-        const userId =
-          subscription.metadata?.user_id;
+        const userId = subscription.metadata?.user_id;
 
         if (!userId) {
           console.error(
             "Keine user_id in Subscription:",
             subscription.id
           );
+
           break;
         }
 
         const priceId =
           subscription.items.data[0]?.price?.id ?? null;
 
-        const { error } =
-          await supabaseAdmin
-            .from("subscriptions")
-            .upsert(
-              {
-                user_id: userId,
-                plan: "premium",
-                status: subscription.status,
-                stripe_customer_id:
-                  typeof subscription.customer === "string"
-                    ? subscription.customer
-                    : null,
-                stripe_subscription_id:
-                  subscription.id,
-                price_id: priceId,
-                cancel_at_period_end:
-                  subscription.cancel_at_period_end,
-                updated_at:
-                  new Date().toISOString(),
-              },
-              {
-                onConflict: "user_id",
-              }
-            );
+        const { error } = await supabaseAdmin
+          .from("subscriptions")
+          .upsert(
+            {
+              user_id: userId,
+              plan: "premium",
+              status: subscription.status,
+              stripe_customer_id:
+                typeof subscription.customer === "string"
+                  ? subscription.customer
+                  : null,
+              stripe_subscription_id: subscription.id,
+              price_id: priceId,
+              cancel_at_period_end:
+                subscription.cancel_at_period_end,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              onConflict: "user_id",
+            }
+          );
 
         if (error) {
           console.error(
@@ -197,23 +178,20 @@ export async function POST(request: Request) {
         const subscription =
           event.data.object as Stripe.Subscription;
 
-        const userId =
-          subscription.metadata?.user_id;
+        const userId = subscription.metadata?.user_id;
 
         if (!userId) {
           break;
         }
 
-        const { error } =
-          await supabaseAdmin
-            .from("subscriptions")
-            .update({
-              status: "canceled",
-              plan: "free",
-              updated_at:
-                new Date().toISOString(),
-            })
-            .eq("user_id", userId);
+        const { error } = await supabaseAdmin
+          .from("subscriptions")
+          .update({
+            status: "canceled",
+            plan: "free",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", userId);
 
         if (error) {
           console.error(
@@ -227,10 +205,7 @@ export async function POST(request: Request) {
           );
         }
 
-        console.log(
-          "PREMIUM BEENDET:",
-          userId
-        );
+        console.log("PREMIUM BEENDET:", userId);
 
         break;
       }
@@ -239,24 +214,30 @@ export async function POST(request: Request) {
         const invoice =
           event.data.object as Stripe.Invoice;
 
-        const subscriptionId =
-          typeof invoice.subscription === "string"
-            ? invoice.subscription
-            : null;
+        let subscriptionId: string | null = null;
+
+        if (
+          invoice.parent?.type === "subscription_details"
+        ) {
+          const subscription =
+            invoice.parent.subscription_details?.subscription;
+
+          if (typeof subscription === "string") {
+            subscriptionId = subscription;
+          }
+        }
 
         if (subscriptionId) {
-          const { error } =
-            await supabaseAdmin
-              .from("subscriptions")
-              .update({
-                status: "past_due",
-                updated_at:
-                  new Date().toISOString(),
-              })
-              .eq(
-                "stripe_subscription_id",
-                subscriptionId
-              );
+          const { error } = await supabaseAdmin
+            .from("subscriptions")
+            .update({
+              status: "past_due",
+              updated_at: new Date().toISOString(),
+            })
+            .eq(
+              "stripe_subscription_id",
+              subscriptionId
+            );
 
           if (error) {
             console.error(
