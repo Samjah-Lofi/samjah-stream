@@ -6,7 +6,7 @@ import {
   useEffect,
   useRef,
   useState,
-  ReactNode,
+  type ReactNode,
 } from "react";
 
 import { usePlayer } from "./PlayerContext";
@@ -45,56 +45,208 @@ export function AudioPlayerProvider({
   useEffect(() => {
     const audio = audioRef.current;
 
-    if (!audio || !currentChannel) {
+    if (!audio) {
       return;
     }
 
-    const wasPlaying = !audio.paused;
+    const handlePlay = () => {
+      setIsPlaying(true);
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    const handleLoadedMetadata = () => {
+      if (Number.isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+
+    const handleDurationChange = () => {
+      if (Number.isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleError = () => {
+      const error = audio.error;
+
+      console.error("AUDIO FEHLER:", {
+        code: error?.code,
+        message: error?.message,
+        src: audio.currentSrc || audio.src,
+      });
+
+      setIsPlaying(false);
+    };
+
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener(
+      "loadedmetadata",
+      handleLoadedMetadata
+    );
+    audio.addEventListener(
+      "durationchange",
+      handleDurationChange
+    );
+    audio.addEventListener(
+      "timeupdate",
+      handleTimeUpdate
+    );
+    audio.addEventListener("error", handleError);
+
+    return () => {
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener(
+        "loadedmetadata",
+        handleLoadedMetadata
+      );
+      audio.removeEventListener(
+        "durationchange",
+        handleDurationChange
+      );
+      audio.removeEventListener(
+        "timeupdate",
+        handleTimeUpdate
+      );
+      audio.removeEventListener("error", handleError);
+    };
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    audio.volume = volume;
+  }, [volume]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (!currentChannel) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+
+      return;
+    }
+
+    const streamUrl = currentChannel.streamUrl;
+
+    if (!streamUrl) {
+      console.error(
+        "Keine streamUrl für Atmosphäre vorhanden:",
+        currentChannel
+      );
+
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+
+      return;
+    }
+
+    console.log(
+      "AUDIO STREAM WIRD GELADEN:",
+      streamUrl
+    );
 
     audio.pause();
+
+    audio.src = streamUrl;
+    audio.volume = volume;
     audio.currentTime = 0;
 
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
 
-    audio.src = currentChannel.streamUrl;
-    audio.volume = volume;
     audio.load();
-
-    if (wasPlaying) {
-      audio
-        .play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch((error) => {
-          console.error("Audio konnte nicht gestartet werden:", error);
-          setIsPlaying(false);
-        });
-    }
-  }, [currentChannel]);
+  }, [currentChannel, volume]);
 
   const play = async () => {
     const audio = audioRef.current;
 
-    if (!audio || !currentChannel) {
+    if (!audio) {
+      console.error("Audio Element nicht verfügbar.");
+      return;
+    }
+
+    if (!currentChannel) {
+      console.error("Kein Kanal ausgewählt.");
+      return;
+    }
+
+    if (!currentChannel.streamUrl) {
+      console.error(
+        "Der aktuelle Kanal besitzt keine streamUrl:",
+        currentChannel
+      );
       return;
     }
 
     try {
-      if (audio.src !== new URL(currentChannel.streamUrl, window.location.href).href) {
+      if (
+        audio.src !==
+        new URL(
+          currentChannel.streamUrl,
+          window.location.href
+        ).href
+      ) {
+        console.log(
+          "Audio URL setzen:",
+          currentChannel.streamUrl
+        );
+
         audio.src = currentChannel.streamUrl;
         audio.load();
       }
 
       audio.volume = volume;
 
+      console.log(
+        "AUDIO PLAY:",
+        audio.currentSrc || audio.src
+      );
+
       await audio.play();
 
       setIsPlaying(true);
     } catch (error) {
-      console.error("Audio konnte nicht gestartet werden:", error);
+      console.error(
+        "AUDIO PLAY FEHLER:",
+        error
+      );
+
       setIsPlaying(false);
     }
   };
@@ -113,18 +265,24 @@ export function AudioPlayerProvider({
   const toggle = async () => {
     if (isPlaying) {
       pause();
-    } else {
-      await play();
+      return;
     }
+
+    await play();
   };
 
   const setVolume = (value: number) => {
-    const nextVolume = Math.min(1, Math.max(0, value));
+    const nextVolume = Math.min(
+      1,
+      Math.max(0, value)
+    );
 
     setVolumeState(nextVolume);
 
-    if (audioRef.current) {
-      audioRef.current.volume = nextVolume;
+    const audio = audioRef.current;
+
+    if (audio) {
+      audio.volume = nextVolume;
     }
   };
 
@@ -135,103 +293,27 @@ export function AudioPlayerProvider({
       return;
     }
 
+    const maxTime =
+      Number.isFinite(audio.duration) &&
+      audio.duration > 0
+        ? audio.duration
+        : duration;
+
     const nextTime = Math.min(
       Math.max(0, time),
-      audio.duration || duration || 0
+      maxTime || 0
     );
 
     audio.currentTime = nextTime;
     setCurrentTime(nextTime);
   };
 
-  useEffect(() => {
-    const audio = audioRef.current;
-
-    if (!audio) {
-      return;
-    }
-
-    const onPlay = () => {
-      setIsPlaying(true);
-    };
-
-    const onPause = () => {
-      setIsPlaying(false);
-    };
-
-    const onEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
-
-    const onLoadedMetadata = () => {
-      setDuration(
-        Number.isFinite(audio.duration) ? audio.duration : 0
-      );
-    };
-
-    const onDurationChange = () => {
-      setDuration(
-        Number.isFinite(audio.duration) ? audio.duration : 0
-      );
-    };
-
-    const onTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
-
-    const onError = () => {
-      console.error(
-        "Fehler beim Laden der Audiodatei:",
-        audio.error
-      );
-
-      setIsPlaying(false);
-    };
-
-    audio.addEventListener("play", onPlay);
-    audio.addEventListener("pause", onPause);
-    audio.addEventListener("ended", onEnded);
-    audio.addEventListener(
-      "loadedmetadata",
-      onLoadedMetadata
-    );
-    audio.addEventListener(
-      "durationchange",
-      onDurationChange
-    );
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("error", onError);
-
-    return () => {
-      audio.removeEventListener("play", onPlay);
-      audio.removeEventListener("pause", onPause);
-      audio.removeEventListener("ended", onEnded);
-      audio.removeEventListener(
-        "loadedmetadata",
-        onLoadedMetadata
-      );
-      audio.removeEventListener(
-        "durationchange",
-        onDurationChange
-      );
-      audio.removeEventListener(
-        "timeupdate",
-        onTimeUpdate
-      );
-      audio.removeEventListener("error", onError);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-
   const progress =
     duration > 0
-      ? Math.min(100, (currentTime / duration) * 100)
+      ? Math.min(
+          100,
+          (currentTime / duration) * 100
+        )
       : 0;
 
   return (
@@ -255,13 +337,16 @@ export function AudioPlayerProvider({
       <audio
         ref={audioRef}
         preload="auto"
+        playsInline
       />
     </AudioPlayerContext.Provider>
   );
 }
 
 export function useAudioPlayer() {
-  const context = useContext(AudioPlayerContext);
+  const context = useContext(
+    AudioPlayerContext
+  );
 
   if (!context) {
     throw new Error(
