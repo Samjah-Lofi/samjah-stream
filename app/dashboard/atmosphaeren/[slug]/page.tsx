@@ -11,20 +11,7 @@ import { usePlayer } from "@/context/PlayerContext";
 import { useAudioPlayer } from "@/context/AudioPlayerContext";
 import Badge from "@/components/ui/Badge";
 
-type Channel = {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  longDescription: string;
-  image: string;
-  streamUrl: string;
-  duration: string;
-  tracks: number;
-  featured: boolean;
-  perfectFor: string[];
-  tags: string[];
-};
+import type { Channel } from "@/types/channel";
 
 export default function AtmosphaereDetailPage() {
   const params = useParams();
