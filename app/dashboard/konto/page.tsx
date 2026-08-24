@@ -20,7 +20,9 @@ type UserData = {
 
 type Subscription = {
   plan: "free" | "premium";
-  status: "active" | "cancelled" | "expired";
+  status: "active" | "cancelled" | "canceled" | "expired" | "past_due";
+  cancel_at: string | null;
+  canceled_at: string | null;
 };
 
 export default function KontoPage() {
@@ -63,7 +65,9 @@ export default function KontoPage() {
         error,
       } = await supabase
         .from("subscriptions")
-        .select("plan, status")
+        .select(
+          "plan, status, cancel_at, canceled_at"
+        )
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -80,6 +84,8 @@ export default function KontoPage() {
         setSubscription({
           plan: "free",
           status: "active",
+          cancel_at: null,
+          canceled_at: null,
         });
       }
 
@@ -167,7 +173,29 @@ export default function KontoPage() {
       : "Free";
 
   const hasActiveSubscription =
+    subscription?.plan === "premium" &&
     subscription?.status === "active";
+
+  const cancellationDate =
+    subscription?.cancel_at
+      ? new Date(subscription.cancel_at)
+      : null;
+
+  const hasScheduledCancellation =
+    hasActiveSubscription &&
+    cancellationDate !== null;
+
+  const formattedCancellationDate =
+    cancellationDate
+      ? cancellationDate.toLocaleDateString(
+          "de-DE",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }
+        )
+      : null;
 
   return (
     <main className="min-h-screen pb-40">
@@ -267,40 +295,63 @@ export default function KontoPage() {
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-[#D89A3C]/20 bg-[#211A17] p-5">
-            <div className="flex items-center gap-3">
-              <ShieldCheck
-                size={21}
-                className="text-[#D89A3C]"
-              />
+          {hasScheduledCancellation ? (
+            <div className="mt-8 rounded-2xl border border-[#D89A3C]/30 bg-[#211A17] p-5">
+              <div className="flex items-center gap-3">
+                <ShieldCheck
+                  size={21}
+                  className="text-[#D89A3C]"
+                />
 
-              <span className="font-semibold text-[#F5E9D8]">
-                {hasActiveSubscription
-                  ? "Aktiver Zugang"
-                  : "Zugang nicht aktiv"}
-              </span>
+                <span className="font-semibold text-[#F5E9D8]">
+                  Kündigung vorgemerkt
+                </span>
+              </div>
+
+              <p className="mt-3 text-sm leading-6 text-[#BFAE98]">
+                Dein Premium-Abo bleibt bis zum{" "}
+                <span className="font-semibold text-[#F5E9D8]">
+                  {formattedCancellationDate}
+                </span>{" "}
+                aktiv. Danach endet dein Premium-Zugang
+                automatisch.
+              </p>
             </div>
+          ) : (
+            <div className="mt-8 rounded-2xl border border-[#D89A3C]/20 bg-[#211A17] p-5">
+              <div className="flex items-center gap-3">
+                <ShieldCheck
+                  size={21}
+                  className="text-[#D89A3C]"
+                />
 
-            <p className="mt-3 text-sm leading-6 text-[#BFAE98]">
-              {subscription?.plan === "premium"
-                ? "Du hast Zugriff auf alle Premium Inhalte und Funktionen."
-                : "Du kannst deine gespeicherten Atmosphären jederzeit anhören und verwalten."}
-            </p>
-          </div>
+                <span className="font-semibold text-[#F5E9D8]">
+                  {hasActiveSubscription
+                    ? "Aktiver Zugang"
+                    : "Zugang nicht aktiv"}
+                </span>
+              </div>
 
-          {subscription?.plan === "premium" &&
-            hasActiveSubscription && (
-              <button
-                type="button"
-                onClick={handleManageSubscription}
-                disabled={openingPortal}
-                className="mt-6 w-full rounded-2xl border border-[#5A4637] bg-[#0F0C0A] px-6 py-4 font-semibold text-[#F5E9D8] transition hover:border-[#D89A3C] hover:text-[#D89A3C] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {openingPortal
-                  ? "Aboverwaltung wird geöffnet..."
-                  : "Abo verwalten"}
-              </button>
-            )}
+              <p className="mt-3 text-sm leading-6 text-[#BFAE98]">
+                {subscription?.plan === "premium"
+                  ? "Du hast Zugriff auf alle Premium Inhalte und Funktionen."
+                  : "Du kannst deine gespeicherten Atmosphären jederzeit anhören und verwalten."}
+              </p>
+            </div>
+          )}
+
+          {hasActiveSubscription && (
+            <button
+              type="button"
+              onClick={handleManageSubscription}
+              disabled={openingPortal}
+              className="mt-6 w-full rounded-2xl border border-[#5A4637] bg-[#0F0C0A] px-6 py-4 font-semibold text-[#F5E9D8] transition hover:border-[#D89A3C] hover:text-[#D89A3C] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {openingPortal
+                ? "Aboverwaltung wird geöffnet..."
+                : "Abo verwalten"}
+            </button>
+          )}
         </div>
       </section>
 
