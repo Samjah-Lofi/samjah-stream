@@ -12,10 +12,10 @@ import { createClient } from "@/lib/supabase/client";
 import type { Channel } from "@/types/channel";
 
 type PlayerContextType = {
-  currentChannel: Channel;
+  currentChannel: Channel | null;
   setCurrentChannel: (channel: Channel) => void;
-  nextChannel: () => void;
-  previousChannel: () => void;
+  nextChannel: () => Channel | null;
+  previousChannel: () => Channel | null;
 };
 
 const PlayerContext =
@@ -69,11 +69,6 @@ export function PlayerProvider({
       );
 
       setChannels(mappedChannels);
-
-      if (mappedChannels.length > 0) {
-        setCurrentChannelState(mappedChannels[0]);
-      }
-
       setLoading(false);
     };
 
@@ -84,53 +79,62 @@ export function PlayerProvider({
     setCurrentChannelState(channel);
   };
 
-  const nextChannel = () => {
-    if (!currentChannel || channels.length === 0) {
-      return;
+  const nextChannel = (): Channel | null => {
+    if (channels.length === 0) {
+      return null;
+    }
+
+    if (!currentChannel) {
+      const channel = channels[0];
+      setCurrentChannelState(channel);
+      return channel;
     }
 
     const currentIndex = channels.findIndex(
       (channel) => channel.id === currentChannel.id
     );
 
-    if (currentIndex === -1) {
-      setCurrentChannelState(channels[0]);
-      return;
-    }
-
     const nextIndex =
+      currentIndex === -1 ||
       currentIndex === channels.length - 1
         ? 0
         : currentIndex + 1;
 
-    setCurrentChannelState(channels[nextIndex]);
+    const channel = channels[nextIndex];
+
+    setCurrentChannelState(channel);
+
+    return channel;
   };
 
-  const previousChannel = () => {
-    if (!currentChannel || channels.length === 0) {
-      return;
+  const previousChannel = (): Channel | null => {
+    if (channels.length === 0) {
+      return null;
+    }
+
+    if (!currentChannel) {
+      const channel = channels[0];
+      setCurrentChannelState(channel);
+      return channel;
     }
 
     const currentIndex = channels.findIndex(
       (channel) => channel.id === currentChannel.id
     );
 
-    if (currentIndex === -1) {
-      setCurrentChannelState(channels[0]);
-      return;
-    }
-
     const previousIndex =
-      currentIndex === 0
+      currentIndex <= 0
         ? channels.length - 1
         : currentIndex - 1;
 
-    setCurrentChannelState(
-      channels[previousIndex]
-    );
+    const channel = channels[previousIndex];
+
+    setCurrentChannelState(channel);
+
+    return channel;
   };
 
-  if (loading || !currentChannel) {
+  if (loading) {
     return null;
   }
 

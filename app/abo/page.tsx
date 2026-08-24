@@ -94,7 +94,7 @@ export default function AboPage() {
           </div>
 
           <Link
-            href="/dashboard/abo/premium"
+            href="/abo/premium"
             className="mt-10 flex w-full items-center justify-center rounded-2xl bg-[#D89A3C] px-6 py-5 text-lg font-bold text-[#120D09] transition hover:bg-[#E9B65A]"
           >
             Premium abonnieren

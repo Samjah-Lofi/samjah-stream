@@ -12,25 +12,27 @@ export async function POST() {
     const supabase = await createClient();
 
     const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-    if (userError) {
+    if (sessionError) {
       console.error(
-        "CHECKOUT USER FEHLER:",
-        userError
+        "CHECKOUT SESSION FEHLER:",
+        sessionError
       );
 
       return NextResponse.json(
         {
-          error: userError.message,
+          error: sessionError.message,
         },
         {
           status: 401,
         }
       );
     }
+
+    const user = session?.user;
 
     if (!user) {
       return NextResponse.json(
@@ -108,10 +110,10 @@ export async function POST() {
         ],
 
         success_url:
-          `${origin}/dashboard/abo/erfolg?session_id={CHECKOUT_SESSION_ID}`,
+          `${origin}/abo/erfolg?session_id={CHECKOUT_SESSION_ID}`,
 
         cancel_url:
-          `${origin}/dashboard/abo`,
+          `${origin}/abo`,
 
         allow_promotion_codes: true,
       });

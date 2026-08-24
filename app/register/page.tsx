@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 export default function RegisterPage() {
   const router = useRouter();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordRepeat, setPasswordRepeat] = useState("");
@@ -25,7 +26,13 @@ export default function RegisterPage() {
     setError("");
     setSuccess(false);
 
+    const cleanName = name.trim();
     const cleanEmail = email.trim();
+
+    if (!cleanName) {
+      setError("Bitte gib deinen Namen ein.");
+      return;
+    }
 
     if (password.length < 6) {
       setError(
@@ -52,7 +59,7 @@ export default function RegisterPage() {
           password,
           options: {
             data: {
-              name: "Samjah",
+              name: cleanName,
             },
           },
         });
@@ -89,11 +96,9 @@ export default function RegisterPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0B0908] px-6 py-12 text-[#F5E9D8]">
-
       <div className="w-full max-w-md">
 
         <div className="mb-10 text-center">
-
           <Link
             href="/"
             className="text-3xl font-black tracking-tight text-[#F5E9D8]"
@@ -104,7 +109,6 @@ export default function RegisterPage() {
           <p className="mt-3 text-sm uppercase tracking-[0.35em] text-[#D89A3C]">
             Crafted Soundscapes
           </p>
-
         </div>
 
         <div className="rounded-[32px] border border-[#3A2B22] bg-[#171311] p-8 shadow-[0_30px_80px_rgba(0,0,0,.35)]">
@@ -112,7 +116,6 @@ export default function RegisterPage() {
           {!success ? (
             <>
               <div className="mb-8">
-
                 <h1 className="text-3xl font-black">
                   Konto erstellen
                 </h1>
@@ -121,7 +124,6 @@ export default function RegisterPage() {
                   Erstelle dein Samjah Konto und entdecke
                   unsere Musikwelten.
                 </p>
-
               </div>
 
               <form
@@ -130,7 +132,28 @@ export default function RegisterPage() {
               >
 
                 <div>
+                  <label
+                    htmlFor="name"
+                    className="mb-2 block text-sm font-semibold text-[#D6C6B4]"
+                  >
+                    Name
+                  </label>
 
+                  <input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(event) =>
+                      setName(event.target.value)
+                    }
+                    required
+                    autoComplete="name"
+                    placeholder="Dein Name"
+                    className="w-full rounded-2xl border border-[#3A2B22] bg-[#0F0C0A] px-5 py-4 text-[#F5E9D8] outline-none transition placeholder:text-[#6F6257] focus:border-[#D89A3C]"
+                  />
+                </div>
+
+                <div>
                   <label
                     htmlFor="email"
                     className="mb-2 block text-sm font-semibold text-[#D6C6B4]"
@@ -150,11 +173,9 @@ export default function RegisterPage() {
                     placeholder="deine@email.de"
                     className="w-full rounded-2xl border border-[#3A2B22] bg-[#0F0C0A] px-5 py-4 text-[#F5E9D8] outline-none transition placeholder:text-[#6F6257] focus:border-[#D89A3C]"
                   />
-
                 </div>
 
                 <div>
-
                   <label
                     htmlFor="password"
                     className="mb-2 block text-sm font-semibold text-[#D6C6B4]"
@@ -174,11 +195,9 @@ export default function RegisterPage() {
                     placeholder="Mindestens 6 Zeichen"
                     className="w-full rounded-2xl border border-[#3A2B22] bg-[#0F0C0A] px-5 py-4 text-[#F5E9D8] outline-none transition placeholder:text-[#6F6257] focus:border-[#D89A3C]"
                   />
-
                 </div>
 
                 <div>
-
                   <label
                     htmlFor="passwordRepeat"
                     className="mb-2 block text-sm font-semibold text-[#D6C6B4]"
@@ -200,7 +219,6 @@ export default function RegisterPage() {
                     placeholder="Passwort wiederholen"
                     className="w-full rounded-2xl border border-[#3A2B22] bg-[#0F0C0A] px-5 py-4 text-[#F5E9D8] outline-none transition placeholder:text-[#6F6257] focus:border-[#D89A3C]"
                   />
-
                 </div>
 
                 {error && (
@@ -218,11 +236,9 @@ export default function RegisterPage() {
                     ? "Konto wird erstellt..."
                     : "Konto erstellen"}
                 </button>
-
               </form>
 
               <div className="my-8 flex items-center gap-4">
-
                 <div className="h-px flex-1 bg-[#2A201A]" />
 
                 <span className="text-sm text-[#6F6257]">
@@ -230,7 +246,6 @@ export default function RegisterPage() {
                 </span>
 
                 <div className="h-px flex-1 bg-[#2A201A]" />
-
               </div>
 
               <p className="text-center text-[#BFAE98]">
@@ -267,14 +282,12 @@ export default function RegisterPage() {
               >
                 Zum Login
               </Link>
-
             </div>
           )}
 
         </div>
 
         <p className="mt-8 text-center text-xs leading-6 text-[#6F6257]">
-
           Mit der Registrierung akzeptierst du unsere
 
           <Link
@@ -292,13 +305,10 @@ export default function RegisterPage() {
           >
             Datenschutzerklärung
           </Link>
-
           .
-
         </p>
 
       </div>
-
     </main>
   );
 }

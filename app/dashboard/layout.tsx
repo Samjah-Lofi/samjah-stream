@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 
 import Sidebar from "../../components/Sidebar";
 import Player from "../../components/Player";
@@ -11,6 +10,8 @@ import { SearchProvider } from "../../context/SearchContext";
 import { FavoritesProvider } from "../../context/FavoritesContext";
 
 import { createClient } from "../../lib/supabase/server";
+
+const SUPERUSER_ID = "837b76e4-db6a-4bb6-a37f-9ed7e438900e";
 
 export default async function DashboardLayout({
   children,
@@ -27,52 +28,27 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const headersList = await headers();
+  const isSuperuser = session.user.id === SUPERUSER_ID;
 
-  const pathname =
-    headersList.get("x-pathname") || "/dashboard";
-
-  const { data: subscription, error } =
-    await supabase
+  if (!isSuperuser) {
+    const { data: subscription, error } = await supabase
       .from("subscriptions")
       .select("plan, status")
       .eq("user_id", session.user.id)
       .maybeSingle();
 
-  if (error) {
-    console.error(
-      "ABO STATUS KANN NICHT GELADEN WERDEN:",
-      error
-    );
-  }
-
-  const hasActiveSubscription =
-    subscription?.status === "active" ||
-    subscription?.status === "trialing";
-
-  /*
-   * Nutzer ohne aktives Abo dürfen ausschließlich
-   * die Abo-Seite sehen.
-   */
-  if (!hasActiveSubscription) {
-    if (pathname !== "/dashboard/abo") {
-      redirect("/dashboard/abo");
+    if (error) {
+      console.error("ABO KANN NICHT GEPRÜFT WERDEN:", error);
+      redirect("/abo");
     }
 
-    /*
-     * Wichtig:
-     * Keine Sidebar, kein Player und keine
-     * Dashboard-Provider auf der Abo-Seite.
-     */
-    return children;
-  }
+    const hasPremium =
+      subscription?.plan === "premium" &&
+      subscription?.status === "active";
 
-  /*
-   * Nutzer mit aktivem Abo brauchen die Abo-Seite
-   * nicht mehr. Sie gehen direkt ins Dashboard.
-   */
-  if (pathname === "/dashboard/abo") {
-    redirect("/dashboard");
+    if (!hasPremium) {
+      redirect("/abo");
+    }
   }
 
   return (

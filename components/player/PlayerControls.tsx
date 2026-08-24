@@ -24,63 +24,39 @@ export default function PlayerControls() {
   const {
     isPlaying,
     toggle,
+    play,
   } = useAudioPlayer();
 
-  const handleNext = () => {
-    nextChannel();
+  const handleNext = async () => {
+    const next = nextChannel();
 
-    const currentIndex = currentChannel
-      ? currentChannel.id
-      : 1;
+    if (!next) {
+      return;
+    }
 
-    const nextId =
-      currentIndex >= 6
-        ? 1
-        : currentIndex + 1;
-
-    const nextSlugs: Record<number, string> = {
-      1: "coffee-morning",
-      2: "lunch-lounge",
-      3: "afro-lounge",
-      4: "sunset-lounge",
-      5: "late-night",
-      6: "rainy-day",
-    };
+    await play(next);
 
     router.push(
-      `/dashboard/atmosphaeren/${nextSlugs[nextId]}`
+      `/dashboard/atmosphaeren/${next.slug}`
     );
   };
 
-  const handlePrevious = () => {
-    previousChannel();
+  const handlePrevious = async () => {
+    const previous = previousChannel();
 
-    const currentIndex = currentChannel
-      ? currentChannel.id
-      : 1;
+    if (!previous) {
+      return;
+    }
 
-    const previousId =
-      currentIndex <= 1
-        ? 6
-        : currentIndex - 1;
-
-    const previousSlugs: Record<number, string> = {
-      1: "coffee-morning",
-      2: "lunch-lounge",
-      3: "afro-lounge",
-      4: "sunset-lounge",
-      5: "late-night",
-      6: "rainy-day",
-    };
+    await play(previous);
 
     router.push(
-      `/dashboard/atmosphaeren/${previousSlugs[previousId]}`
+      `/dashboard/atmosphaeren/${previous.slug}`
     );
   };
 
   return (
     <div className="mb-5 flex items-center justify-center gap-8">
-
       <button
         type="button"
         onClick={handlePrevious}
@@ -93,7 +69,11 @@ export default function PlayerControls() {
       <button
         type="button"
         onClick={toggle}
-        aria-label={isPlaying ? "Pause" : "Abspielen"}
+        aria-label={
+          isPlaying
+            ? "Pause"
+            : "Abspielen"
+        }
         className="pulse-glow flex h-16 w-16 items-center justify-center rounded-full bg-[#D89A3C] text-[#120D09] transition-all duration-300 hover:scale-110 hover:bg-[#E9B65A]"
       >
         {isPlaying ? (
@@ -115,7 +95,6 @@ export default function PlayerControls() {
       >
         <SkipForward size={26} />
       </button>
-
     </div>
   );
 }
