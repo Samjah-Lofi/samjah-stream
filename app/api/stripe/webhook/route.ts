@@ -199,17 +199,29 @@ export async function POST(request: Request) {
           subscription.items.data[0]?.price?.id ??
           null;
 
+        const subscriptionData =
+          subscription as Stripe.Subscription & {
+            current_period_start?: number;
+            current_period_end?: number;
+          };
+
         const periodStart =
-          new Date(
-            subscription.current_period_start *
-              1000
-          ).toISOString();
+          typeof subscriptionData.current_period_start ===
+          "number"
+            ? new Date(
+                subscriptionData.current_period_start *
+                  1000
+              ).toISOString()
+            : null;
 
         const periodEnd =
-          new Date(
-            subscription.current_period_end *
-              1000
-          ).toISOString();
+          typeof subscriptionData.current_period_end ===
+          "number"
+            ? new Date(
+                subscriptionData.current_period_end *
+                  1000
+              ).toISOString()
+            : null;
 
         const { error } =
           await supabaseAdmin
@@ -318,7 +330,7 @@ export async function POST(request: Request) {
                 "user_id für gelöschte Subscription nicht gefunden.",
             },
             {
-              status: 400,
+              status: 400
             }
           );
         }
