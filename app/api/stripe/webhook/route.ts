@@ -103,6 +103,8 @@ export async function POST(request: Request) {
                   process.env
                     .STRIPE_PREMIUM_PRICE_ID,
                 cancel_at_period_end: false,
+                cancel_at: null,
+                canceled_at: null,
                 updated_at:
                   new Date().toISOString(),
               },
@@ -203,6 +205,8 @@ export async function POST(request: Request) {
           subscription as Stripe.Subscription & {
             current_period_start?: number;
             current_period_end?: number;
+            cancel_at?: number | null;
+            canceled_at?: number | null;
           };
 
         const periodStart =
@@ -219,6 +223,24 @@ export async function POST(request: Request) {
           "number"
             ? new Date(
                 subscriptionData.current_period_end *
+                  1000
+              ).toISOString()
+            : null;
+
+        const cancelAt =
+          typeof subscriptionData.cancel_at ===
+          "number"
+            ? new Date(
+                subscriptionData.cancel_at *
+                  1000
+              ).toISOString()
+            : null;
+
+        const canceledAt =
+          typeof subscriptionData.canceled_at ===
+          "number"
+            ? new Date(
+                subscriptionData.canceled_at *
                   1000
               ).toISOString()
             : null;
@@ -245,6 +267,8 @@ export async function POST(request: Request) {
                   periodEnd,
                 cancel_at_period_end:
                   subscription.cancel_at_period_end,
+                cancel_at: cancelAt,
+                canceled_at: canceledAt,
                 updated_at:
                   new Date().toISOString(),
               },
@@ -269,8 +293,10 @@ export async function POST(request: Request) {
           "SUBSCRIPTION AKTUALISIERT:",
           userId,
           subscription.status,
-          "Kündigung zum Periodenende:",
-          subscription.cancel_at_period_end
+          "cancel_at:",
+          cancelAt,
+          "canceled_at:",
+          canceledAt
         );
 
         break;
@@ -330,10 +356,34 @@ export async function POST(request: Request) {
                 "user_id für gelöschte Subscription nicht gefunden.",
             },
             {
-              status: 400
+              status: 400,
             }
           );
         }
+
+        const subscriptionData =
+          subscription as Stripe.Subscription & {
+            cancel_at?: number | null;
+            canceled_at?: number | null;
+          };
+
+        const cancelAt =
+          typeof subscriptionData.cancel_at ===
+          "number"
+            ? new Date(
+                subscriptionData.cancel_at *
+                  1000
+              ).toISOString()
+            : null;
+
+        const canceledAt =
+          typeof subscriptionData.canceled_at ===
+          "number"
+            ? new Date(
+                subscriptionData.canceled_at *
+                  1000
+              ).toISOString()
+            : null;
 
         const { error } =
           await supabaseAdmin
@@ -342,6 +392,8 @@ export async function POST(request: Request) {
               status: "canceled",
               plan: "free",
               cancel_at_period_end: false,
+              cancel_at: cancelAt,
+              canceled_at: canceledAt,
               current_period_start: null,
               current_period_end: null,
               updated_at:
