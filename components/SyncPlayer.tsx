@@ -13,10 +13,10 @@ export default function SyncPlayer({ channel }: Props) {
   const { currentChannel, setCurrentChannel } = usePlayer();
 
   useEffect(() => {
-    if (currentChannel.id !== channel.id) {
+    if (!currentChannel || currentChannel.id !== channel.id) {
       setCurrentChannel(channel);
     }
-  }, [channel, currentChannel.id, setCurrentChannel]);
+  }, [channel, currentChannel, setCurrentChannel]);
 
   return null;
 }
