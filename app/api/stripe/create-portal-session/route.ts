@@ -44,7 +44,9 @@ export async function POST() {
       error: subscriptionError,
     } = await supabase
       .from("subscriptions")
-      .select("stripe_customer_id, plan, status")
+      .select(
+        "stripe_customer_id, stripe_subscription_id, plan, status"
+      )
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -69,6 +71,11 @@ export async function POST() {
       subscription?.stripe_customer_id || "FEHLT"
     );
 
+    console.log(
+      "STRIPE SUBSCRIPTION ID:",
+      subscription?.stripe_subscription_id || "FEHLT"
+    );
+
     if (!subscription?.stripe_customer_id) {
       return NextResponse.json(
         {
@@ -79,6 +86,53 @@ export async function POST() {
           status: 400,
         }
       );
+    }
+
+    if (subscription.stripe_subscription_id) {
+      try {
+        const stripeSubscription =
+          await stripe.subscriptions.retrieve(
+            subscription.stripe_subscription_id
+          );
+
+        console.log(
+          "STRIPE ABO STATUS:",
+          stripeSubscription.status
+        );
+
+        console.log(
+          "STRIPE KÜNDIGUNG ZUM PERIODENENDE:",
+          stripeSubscription.cancel_at_period_end
+        );
+
+        const { error: syncError } =
+          await supabase
+            .from("subscriptions")
+            .update({
+              status: stripeSubscription.status,
+              cancel_at_period_end:
+                stripeSubscription.cancel_at_period_end,
+              updated_at:
+                new Date().toISOString(),
+            })
+            .eq("user_id", user.id);
+
+        if (syncError) {
+          console.error(
+            "SUPABASE ABO SYNC FEHLER:",
+            syncError
+          );
+        } else {
+          console.log(
+            "SUPABASE ABO SYNCHRONISIERT"
+          );
+        }
+      } catch (stripeSubscriptionError) {
+        console.error(
+          "STRIPE ABO KANN NICHT GELADEN WERDEN:",
+          stripeSubscriptionError
+        );
+      }
     }
 
     const origin =
