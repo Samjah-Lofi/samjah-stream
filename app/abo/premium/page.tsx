@@ -9,6 +9,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import Footer from "@/components/Footer";
+
 const features = [
   "Alle Samjah Atmosphären",
   "Unbegrenztes Anhören",
@@ -57,10 +59,7 @@ export default function PremiumPage() {
 
       window.location.href = data.url;
     } catch (error) {
-      console.error(
-        "Checkout Fehler:",
-        error
-      );
+      console.error("Checkout Fehler:", error);
 
       setError(
         error instanceof Error
@@ -76,7 +75,7 @@ export default function PremiumPage() {
     <main className="min-h-screen pb-40">
       <section className="px-12 pt-10">
         <Link
-          href="/dashboard/abo"
+          href="/abo"
           className="inline-flex items-center gap-2 text-[#BFAE98] transition hover:text-[#D89A3C]"
         >
           <ArrowLeft size={18} />
@@ -218,6 +217,8 @@ export default function PremiumPage() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </main>
   );
 }

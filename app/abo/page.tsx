@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
+import Footer from "@/components/Footer";
 
 const premiumFeatures = [
   "Alle Atmosphären",
@@ -105,6 +106,8 @@ export default function AboPage() {
           </p>
         </div>
       </section>
+
+      <Footer />
     </main>
   );
 }
