@@ -66,20 +66,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const publicPaths = [
-    "/",
-    "/login",
-    "/register",
-    "/abo",
-    "/abo/erfolg",
-    "/abo/premium",
-  ];
+  const isDashboard =
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/");
 
-  const isPublicPath =
-    publicPaths.includes(pathname) ||
-    pathname.startsWith("/auth");
-
-  if (!session && !isPublicPath) {
+  if (!session && isDashboard) {
     const url = request.nextUrl.clone();
 
     url.pathname = "/login";
