@@ -38,7 +38,11 @@ export default async function DashboardLayout({
       .maybeSingle();
 
     if (error) {
-      console.error("ABO KANN NICHT GEPRÜFT WERDEN:", error);
+      console.error(
+        "ABO KANN NICHT GEPRÜFT WERDEN:",
+        error
+      );
+
       redirect("/abo");
     }
 
@@ -57,10 +61,10 @@ export default async function DashboardLayout({
         <SearchProvider>
           <PreviewProvider>
             <AudioPlayerProvider>
-              <main className="min-h-screen bg-[#0B0908] text-[#F5E9D8]">
+              <main className="min-h-screen overflow-x-hidden bg-[#0B0908] text-[#F5E9D8]">
                 <Sidebar />
 
-                <div className="ml-72">
+                <div className="ml-0 md:ml-72">
                   {children}
                 </div>
 
