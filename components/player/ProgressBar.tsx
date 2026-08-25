@@ -23,8 +23,7 @@ export default function ProgressBar() {
 
   return (
     <>
-      <div className="flex w-full items-center gap-4">
-
+      <div className="hidden w-full items-center gap-4 md:flex">
         <span className="w-12 text-right text-xs text-[#8D7B68]">
           {formatTime(currentTime)}
         </span>
@@ -43,13 +42,24 @@ export default function ProgressBar() {
         <span className="w-12 text-xs text-[#8D7B68]">
           {formatTime(duration)}
         </span>
-
       </div>
 
-      <div className="mt-2 text-center text-xs text-[#D89A3C]">
-
+      <div className="hidden text-center text-xs text-[#D89A3C] md:block">
         {Math.round(progress)}%
+      </div>
 
+      <div className="md:hidden">
+        <input
+          type="range"
+          min="0"
+          max={duration || 0}
+          value={currentTime}
+          onChange={(e) =>
+            seek(Number(e.target.value))
+          }
+          aria-label="Wiedergabefortschritt"
+          className="block h-1 w-full cursor-pointer accent-[#D89A3C]"
+        />
       </div>
     </>
   );

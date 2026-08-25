@@ -16,7 +16,6 @@ export default function PlayerControls() {
   const router = useRouter();
 
   const {
-    currentChannel,
     nextChannel,
     previousChannel,
   } = usePlayer();
@@ -56,14 +55,17 @@ export default function PlayerControls() {
   };
 
   return (
-    <div className="mb-5 flex items-center justify-center gap-8">
+    <div className="flex items-center justify-center gap-3 md:mb-5 md:gap-8">
       <button
         type="button"
         onClick={handlePrevious}
         aria-label="Vorherige Atmosphäre"
         className="text-[#8D7B68] transition hover:scale-110 hover:text-[#D89A3C]"
       >
-        <SkipBack size={26} />
+        <SkipBack
+          size={20}
+          className="md:h-[26px] md:w-[26px]"
+        />
       </button>
 
       <button
@@ -74,15 +76,18 @@ export default function PlayerControls() {
             ? "Pause"
             : "Abspielen"
         }
-        className="pulse-glow flex h-16 w-16 items-center justify-center rounded-full bg-[#D89A3C] text-[#120D09] transition-all duration-300 hover:scale-110 hover:bg-[#E9B65A]"
+        className="pulse-glow flex h-11 w-11 items-center justify-center rounded-full bg-[#D89A3C] text-[#120D09] transition-all duration-300 hover:scale-110 hover:bg-[#E9B65A] md:h-16 md:w-16"
       >
         {isPlaying ? (
-          <Pause size={30} />
+          <Pause
+            size={21}
+            className="md:h-[30px] md:w-[30px]"
+          />
         ) : (
           <Play
-            size={30}
+            size={21}
             fill="currentColor"
-            className="ml-1"
+            className="ml-0.5 md:ml-1 md:h-[30px] md:w-[30px]"
           />
         )}
       </button>
@@ -93,7 +98,10 @@ export default function PlayerControls() {
         aria-label="Nächste Atmosphäre"
         className="text-[#8D7B68] transition hover:scale-110 hover:text-[#D89A3C]"
       >
-        <SkipForward size={26} />
+        <SkipForward
+          size={20}
+          className="md:h-[26px] md:w-[26px]"
+        />
       </button>
     </div>
   );
