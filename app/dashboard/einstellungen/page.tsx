@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   Volume2,
-  Bell,
   PlayCircle,
   Save,
 } from "lucide-react";
@@ -12,13 +11,11 @@ import { createClient } from "@/lib/supabase/client";
 
 type Settings = {
   autoplay: boolean;
-  notifications: boolean;
   volume: number;
 };
 
 const defaultSettings: Settings = {
   autoplay: true,
-  notifications: true,
   volume: 75,
 };
 
@@ -45,7 +42,7 @@ export default function EinstellungenPage() {
 
       const { data, error } = await supabase
         .from("user_settings")
-        .select("autoplay, volume, notifications")
+        .select("autoplay, volume")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -63,7 +60,6 @@ export default function EinstellungenPage() {
         setSettings({
           autoplay: data.autoplay,
           volume: data.volume,
-          notifications: data.notifications,
         });
       } else {
         const { error: insertError } = await supabase
@@ -72,7 +68,6 @@ export default function EinstellungenPage() {
             user_id: user.id,
             autoplay: defaultSettings.autoplay,
             volume: defaultSettings.volume,
-            notifications: defaultSettings.notifications,
           });
 
         if (insertError) {
@@ -129,7 +124,6 @@ export default function EinstellungenPage() {
             user_id: user.id,
             autoplay: settings.autoplay,
             volume: settings.volume,
-            notifications: settings.notifications,
             updated_at: new Date().toISOString(),
           },
           {
@@ -293,62 +287,6 @@ export default function EinstellungenPage() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-[28px] border border-[#3A2B22] bg-[#171311] p-8">
-          <div className="flex items-center gap-4 border-b border-[#3A2B22] pb-7">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#211A17]">
-              <Bell
-                size={22}
-                className="text-[#D89A3C]"
-              />
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-[#F5E9D8]">
-                Benachrichtigungen
-              </h2>
-
-              <p className="mt-1 text-[#8D7B68]">
-                Entscheide, welche Hinweise du erhalten möchtest.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 flex items-center justify-between gap-8 rounded-2xl border border-[#3A2B22] bg-[#0F0C0A] p-6">
-            <div>
-              <p className="font-semibold text-[#F5E9D8]">
-                Neue Atmosphären
-              </p>
-
-              <p className="mt-1 text-sm text-[#8D7B68]">
-                Informiere mich über neue Musikwelten.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                updateSetting(
-                  "notifications",
-                  !settings.notifications
-                )
-              }
-              className={`relative h-7 w-12 rounded-full transition ${
-                settings.notifications
-                  ? "bg-[#D89A3C]"
-                  : "bg-[#3A2B22]"
-              }`}
-            >
-              <span
-                className={`absolute top-1 h-5 w-5 rounded-full bg-[#F5E9D8] transition ${
-                  settings.notifications
-                    ? "left-6"
-                    : "left-1"
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
         <div className="mt-8 flex items-center justify-between rounded-[28px] border border-[#3A2B22] bg-[#171311] p-6">
           <div>
             {saved ? (
@@ -357,7 +295,7 @@ export default function EinstellungenPage() {
               </p>
             ) : (
               <p className="text-[#BFAE98]">
-                Deine Wiedergabe- und Benachrichtigungseinstellungen werden in deinem Konto gespeichert.
+                Autoplay und Lautstärke werden in deinem Konto gespeichert.
               </p>
             )}
           </div>
