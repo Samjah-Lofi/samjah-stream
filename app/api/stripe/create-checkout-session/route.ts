@@ -45,6 +45,52 @@ export async function POST() {
       );
     }
 
+    const { data: existingSubscription, error: subscriptionError } =
+      await supabase
+        .from("subscriptions")
+        .select(
+          "status, plan, stripe_customer_id, stripe_subscription_id, cancel_at_period_end"
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+    if (subscriptionError) {
+      console.error(
+        "SUBSCRIPTION PRÜFUNG FEHLER:",
+        subscriptionError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Der aktuelle Abo-Status konnte nicht geprüft werden.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    const hasActivePremium =
+      existingSubscription?.plan === "premium" &&
+      (
+        existingSubscription.status === "active" ||
+        existingSubscription.status === "trialing" ||
+        existingSubscription.status === "past_due"
+      );
+
+    if (hasActivePremium) {
+      return NextResponse.json(
+        {
+          error:
+            "Du hast bereits ein aktives Premium-Abo.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
     const priceId =
       process.env.STRIPE_PREMIUM_PRICE_ID;
 
