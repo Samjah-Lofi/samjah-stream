@@ -205,26 +205,29 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <p className="mt-8 text-center text-xs leading-6 text-[#6F6257]">
-          Mit der Anmeldung akzeptierst du unsere
+        <div className="mt-8 text-center text-xs leading-6 text-[#6F6257]">
+          <p>
+            <a
+              href="https://samjah-music.com/impressum/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#8D7B68] hover:text-[#D89A3C]"
+            >
+              Impressum
+            </a>
 
-          <Link
-            href="/agb"
-            className="mx-1 text-[#8D7B68] hover:text-[#D89A3C]"
-          >
-            AGB
-          </Link>
+            <span className="mx-2">|</span>
 
-          und
-
-          <Link
-            href="/datenschutz"
-            className="ml-1 text-[#8D7B68] hover:text-[#D89A3C]"
-          >
-            Datenschutzerklärung
-          </Link>
-          .
-        </p>
+            <a
+              href="https://samjah-music.com/datenschutzerklaerung/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#8D7B68] hover:text-[#D89A3C]"
+            >
+              Datenschutzerklärung
+            </a>
+          </p>
+        </div>
       </div>
     </main>
   );

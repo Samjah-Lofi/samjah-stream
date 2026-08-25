@@ -97,7 +97,6 @@ export default function RegisterPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0B0908] px-6 py-12 text-[#F5E9D8]">
       <div className="w-full max-w-md">
-
         <div className="mb-10 text-center">
           <Link
             href="/"
@@ -112,7 +111,6 @@ export default function RegisterPage() {
         </div>
 
         <div className="rounded-[32px] border border-[#3A2B22] bg-[#171311] p-8 shadow-[0_30px_80px_rgba(0,0,0,.35)]">
-
           {!success ? (
             <>
               <div className="mb-8">
@@ -130,7 +128,6 @@ export default function RegisterPage() {
                 onSubmit={handleRegister}
                 className="space-y-5"
               >
-
                 <div>
                   <label
                     htmlFor="name"
@@ -261,7 +258,6 @@ export default function RegisterPage() {
             </>
           ) : (
             <div className="py-6 text-center">
-
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#D89A3C]/15 text-3xl text-[#D89A3C]">
                 ✓
               </div>
@@ -284,30 +280,31 @@ export default function RegisterPage() {
               </Link>
             </div>
           )}
-
         </div>
 
-        <p className="mt-8 text-center text-xs leading-6 text-[#6F6257]">
-          Mit der Registrierung akzeptierst du unsere
+        <div className="mt-8 text-center text-xs leading-6 text-[#6F6257]">
+          <p>
+            <a
+              href="https://samjah-music.com/impressum/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#8D7B68] hover:text-[#D89A3C]"
+            >
+              Impressum
+            </a>
 
-          <Link
-            href="/agb"
-            className="mx-1 text-[#8D7B68] hover:text-[#D89A3C]"
-          >
-            AGB
-          </Link>
+            <span className="mx-2">|</span>
 
-          und
-
-          <Link
-            href="/datenschutz"
-            className="ml-1 text-[#8D7B68] hover:text-[#D89A3C]"
-          >
-            Datenschutzerklärung
-          </Link>
-          .
-        </p>
-
+            <a
+              href="https://samjah-music.com/datenschutzerklaerung/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#8D7B68] hover:text-[#D89A3C]"
+            >
+              Datenschutzerklärung
+            </a>
+          </p>
+        </div>
       </div>
     </main>
   );
