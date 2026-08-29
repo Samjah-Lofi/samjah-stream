@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-
-import {
-  Geist,
-  Geist_Mono,
-} from "next/font/google";
-
+﻿import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,69 +13,33 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "Samjah Stream | Hintergrundmusik für Locations",
-    template: "%s | Samjah Stream",
-  },
-
+  title: "Samjah Music | Hintergrundmusik für deine Location",
   description:
-    "Professionelle Hintergrundmusik für Cafés, Restaurants, Hotels und andere Locations. Entspannte Atmosphären von Samjah Stream.",
-
-  applicationName: "Samjah Stream",
-
-  keywords: [
-    "Hintergrundmusik",
-    "Musik für Cafés",
-    "Musik für Restaurants",
-    "Musik für Hotels",
-    "Lounge Musik",
-    "LoFi",
-    "Samjah Stream",
-  ],
-
-  authors: [
-    {
-      name: "Samjah",
-    },
-  ],
-
-  creator: "Samjah",
-
-  metadataBase: new URL(
-    "https://samjah-stream.vercel.app"
-  ),
-
+    "Professionelle Hintergrundmusik und Atmosphären für Cafés, Restaurants, Hotels, Bars und Lounges.",
+  metadataBase: new URL("https://samjah-music.com"),
   openGraph: {
-    type: "website",
-    locale: "de_DE",
-    siteName: "Samjah Stream",
-    title:
-      "Samjah Stream | Hintergrundmusik für Locations",
+    title: "Samjah Music | Hintergrundmusik für deine Location",
     description:
-      "Professionelle Hintergrundmusik für Cafés, Restaurants, Hotels und andere Locations.",
-    url: "https://samjah-stream.vercel.app",
+      "Professionelle Hintergrundmusik und Atmosphären für Cafés, Restaurants, Hotels, Bars und Lounges.",
+    url: "https://samjah-music.com",
+    siteName: "Samjah Music",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Samjah Stream | Hintergrundmusik für Locations",
+        alt: "Samjah Music",
       },
     ],
+    locale: "de_DE",
+    type: "website",
   },
-
   twitter: {
     card: "summary_large_image",
-    title:
-      "Samjah Stream | Hintergrundmusik für Locations",
+    title: "Samjah Music | Hintergrundmusik für deine Location",
     description:
-      "Professionelle Hintergrundmusik für Cafés, Restaurants, Hotels und andere Locations.",
+      "Professionelle Hintergrundmusik und Atmosphären für Cafés, Restaurants, Hotels, Bars und Lounges.",
     images: ["/og-image.png"],
-  },
-
-  robots: {
-    index: true,
-    follow: true,
   },
 };
 
@@ -92,11 +51,9 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="min-h-full bg-zinc-950 text-white">
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

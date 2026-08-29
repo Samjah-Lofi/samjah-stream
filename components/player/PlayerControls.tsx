@@ -7,51 +7,22 @@ import {
   SkipForward,
 } from "lucide-react";
 
-import { useRouter } from "next/navigation";
-
-import { usePlayer } from "@/context/PlayerContext";
 import { useAudioPlayer } from "@/context/AudioPlayerContext";
 
 export default function PlayerControls() {
-  const router = useRouter();
-
-  const {
-    nextChannel,
-    previousChannel,
-  } = usePlayer();
-
   const {
     isPlaying,
     toggle,
-    play,
+    nextTrack,
+    previousTrack,
   } = useAudioPlayer();
 
   const handleNext = async () => {
-    const next = nextChannel();
-
-    if (!next) {
-      return;
-    }
-
-    await play(next);
-
-    router.push(
-      `/dashboard/atmosphaeren/${next.slug}`
-    );
+    await nextTrack();
   };
 
   const handlePrevious = async () => {
-    const previous = previousChannel();
-
-    if (!previous) {
-      return;
-    }
-
-    await play(previous);
-
-    router.push(
-      `/dashboard/atmosphaeren/${previous.slug}`
-    );
+    await previousTrack();
   };
 
   return (
@@ -59,7 +30,7 @@ export default function PlayerControls() {
       <button
         type="button"
         onClick={handlePrevious}
-        aria-label="Vorherige Atmosphäre"
+        aria-label="Vorheriger Track"
         className="text-[#8D7B68] transition hover:scale-110 hover:text-[#D89A3C]"
       >
         <SkipBack
@@ -95,7 +66,7 @@ export default function PlayerControls() {
       <button
         type="button"
         onClick={handleNext}
-        aria-label="Nächste Atmosphäre"
+        aria-label="Nächster Track"
         className="text-[#8D7B68] transition hover:scale-110 hover:text-[#D89A3C]"
       >
         <SkipForward

@@ -10,6 +10,28 @@ import {
 } from "react";
 
 import type { Channel } from "../types/channel";
+import { createClient } from "../lib/supabase/client";
+
+type Track = {
+  id: number;
+  catalog_number: number;
+  title: string;
+  duration_seconds: number;
+  audio_path: string;
+};
+
+type TrackChannelRow = {
+  sort_order: number;
+  track_id: number;
+};
+
+type TrackRow = {
+  id: number;
+  catalog_number: number;
+  title: string;
+  duration_seconds: number;
+  audio_path: string;
+};
 
 type AudioPlayerContextType = {
   isPlaying: boolean;
@@ -20,6 +42,8 @@ type AudioPlayerContextType = {
   play: (channel?: Channel) => Promise<void>;
   pause: () => void;
   toggle: () => Promise<void>;
+  nextTrack: () => Promise<void>;
+  previousTrack: () => Promise<void>;
   setVolume: (value: number) => void;
   seek: (time: number) => void;
   audioRef: React.RefObject<HTMLAudioElement | null>;
@@ -34,12 +58,14 @@ export function AudioPlayerProvider({
   children: ReactNode;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
-
   const currentChannelRef =
     useRef<Channel | null>(null);
 
-  const [currentChannel, setCurrentChannel] =
-    useState<Channel | null>(null);
+  const tracksRef =
+    useRef<Track[]>([]);
+
+  const trackIndexRef =
+    useRef(0);
 
   const [isPlaying, setIsPlaying] =
     useState(false);
@@ -53,8 +79,293 @@ export function AudioPlayerProvider({
   const [duration, setDuration] =
     useState(0);
 
+  const supabase = createClient();
+
+  const getTrackUrl = async (
+    audioPath: string
+  ): Promise<string | null> => {
+    const { data, error } =
+      await supabase.storage
+        .from("audio")
+        .createSignedUrl(
+          audioPath,
+          3600
+        );
+
+    if (error) {
+      console.error(
+        "SIGNED URL FEHLER:",
+        error
+      );
+
+      return null;
+    }
+
+    return data.signedUrl;
+  };
+
+  const playTrack = async (
+    track: Track,
+    shouldPlay = true
+  ) => {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    const url =
+      await getTrackUrl(
+        track.audio_path
+      );
+
+    if (!url) {
+      setIsPlaying(false);
+      return;
+    }
+
+    try {
+      audio.pause();
+
+      audio.src = url;
+      audio.volume = volume;
+      audio.currentTime = 0;
+
+      setCurrentTime(0);
+
+      setDuration(
+        track.duration_seconds || 0
+      );
+
+      setIsPlaying(false);
+
+      audio.load();
+
+      await new Promise<void>(
+        (
+          resolve,
+          reject
+        ) => {
+          const handleCanPlay =
+            () => {
+              cleanup();
+              resolve();
+            };
+
+          const handleError =
+            () => {
+              cleanup();
+
+              reject(
+                new Error(
+                  "Audio konnte nicht geladen werden."
+                )
+              );
+            };
+
+          const cleanup = () => {
+            audio.removeEventListener(
+              "canplay",
+              handleCanPlay
+            );
+
+            audio.removeEventListener(
+              "error",
+              handleError
+            );
+          };
+
+          audio.addEventListener(
+            "canplay",
+            handleCanPlay,
+            {
+              once: true,
+            }
+          );
+
+          audio.addEventListener(
+            "error",
+            handleError,
+            {
+              once: true,
+            }
+          );
+        }
+      );
+
+      if (shouldPlay) {
+        await audio.play();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      console.error(
+        "AUDIO TRACK FEHLER:",
+        error
+      );
+
+      setIsPlaying(false);
+    }
+  };
+
+  const loadChannelTracks =
+    async (
+      channel: Channel
+    ): Promise<Track[]> => {
+      const {
+        data: relationData,
+        error: relationError,
+      } = await supabase
+        .from("track_channels")
+        .select(
+          "sort_order, track_id"
+        )
+        .eq(
+          "channel_id",
+          channel.id
+        )
+        .order(
+          "sort_order",
+          {
+            ascending: true,
+          }
+        );
+
+      if (relationError) {
+        console.error(
+          "TRACK CHANNELS LADEN FEHLER:",
+          relationError
+        );
+
+        return [];
+      }
+
+      const relations =
+        (relationData ??
+          []) as TrackChannelRow[];
+
+      if (!relations.length) {
+        return [];
+      }
+
+      const trackIds =
+        relations.map(
+          (item) =>
+            item.track_id
+        );
+
+      const {
+        data: trackData,
+        error: trackError,
+      } = await supabase
+        .from("tracks")
+        .select(
+          "id, catalog_number, title, duration_seconds, audio_path"
+        )
+        .in(
+          "id",
+          trackIds
+        );
+
+      if (trackError) {
+        console.error(
+          "TRACKS LADEN FEHLER:",
+          trackError
+        );
+
+        return [];
+      }
+
+      const rows =
+        (trackData ??
+          []) as TrackRow[];
+
+      const trackMap =
+        new Map<number, Track>();
+
+      for (const row of rows) {
+        trackMap.set(
+          row.id,
+          {
+            id: row.id,
+            catalog_number:
+              row.catalog_number,
+            title: row.title,
+            duration_seconds:
+              row.duration_seconds,
+            audio_path:
+              row.audio_path,
+          }
+        );
+      }
+
+      const tracks: Track[] = [];
+
+      for (const relation of relations) {
+        const track =
+          trackMap.get(
+            relation.track_id
+          );
+
+        if (!track) {
+          continue;
+        }
+
+        tracks.push(track);
+      }
+
+      console.log(
+        `CHANNEL "${channel.title}": ${tracks.length} TRACKS GELADEN`
+      );
+
+      return tracks;
+    };
+
+  const nextTrack = async () => {
+    const tracks =
+      tracksRef.current;
+
+    if (!tracks.length) {
+      return;
+    }
+
+    trackIndexRef.current =
+      (trackIndexRef.current + 1) %
+      tracks.length;
+
+    await playTrack(
+      tracks[
+        trackIndexRef.current
+      ],
+      true
+    );
+  };
+
+  const previousTrack =
+    async () => {
+      const tracks =
+        tracksRef.current;
+
+      if (!tracks.length) {
+        return;
+      }
+
+      trackIndexRef.current =
+        trackIndexRef.current <= 0
+          ? tracks.length - 1
+          : trackIndexRef.current - 1;
+
+      await playTrack(
+        tracks[
+          trackIndexRef.current
+        ],
+        true
+      );
+    };
+
   useEffect(() => {
-    const audio = audioRef.current;
+    const audio =
+      audioRef.current;
 
     if (!audio) {
       return;
@@ -65,42 +376,60 @@ export function AudioPlayerProvider({
     };
 
     const handlePause = () => {
-      console.trace(
-        "!!! AUDIO ELEMENT PAUSE EVENT !!!"
-      );
-
       setIsPlaying(false);
     };
 
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
+    const handleEnded =
+      async () => {
+        await nextTrack();
+      };
 
-    const handleLoadedMetadata = () => {
-      if (Number.isFinite(audio.duration)) {
-        setDuration(audio.duration);
-      }
-    };
+    const handleLoadedMetadata =
+      () => {
+        if (
+          Number.isFinite(
+            audio.duration
+          )
+        ) {
+          setDuration(
+            audio.duration
+          );
+        }
+      };
 
-    const handleDurationChange = () => {
-      if (Number.isFinite(audio.duration)) {
-        setDuration(audio.duration);
-      }
-    };
+    const handleDurationChange =
+      () => {
+        if (
+          Number.isFinite(
+            audio.duration
+          )
+        ) {
+          setDuration(
+            audio.duration
+          );
+        }
+      };
 
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
+    const handleTimeUpdate =
+      () => {
+        setCurrentTime(
+          audio.currentTime
+        );
+      };
 
     const handleError = () => {
-      console.error("AUDIO FEHLER:", {
-        code: audio.error?.code,
-        message: audio.error?.message,
-        src:
-          audio.currentSrc ||
-          audio.src,
-      });
+      console.error(
+        "AUDIO FEHLER:",
+        {
+          code:
+            audio.error?.code,
+          message:
+            audio.error?.message,
+          src:
+            audio.currentSrc ||
+            audio.src,
+        }
+      );
 
       setIsPlaying(false);
     };
@@ -179,96 +508,59 @@ export function AudioPlayerProvider({
   }, []);
 
   useEffect(() => {
-    const audio = audioRef.current;
+    const audio =
+      audioRef.current;
 
-    if (!audio) {
-      return;
+    if (audio) {
+      audio.volume = volume;
     }
-
-    audio.volume = volume;
   }, [volume]);
 
-  const changeChannel = async (
-    channel: Channel
-  ) => {
-    const audio = audioRef.current;
+  const changeChannel =
+    async (
+      channel: Channel
+    ) => {
+      currentChannelRef.current =
+        channel;
 
-    if (!audio) {
-      return;
-    }
+      const tracks =
+        await loadChannelTracks(
+          channel
+        );
 
-    currentChannelRef.current =
-      channel;
+      if (!tracks.length) {
+        console.error(
+          "Keine Tracks für Atmosphäre gefunden:",
+          channel.title
+        );
 
-    setCurrentChannel(channel);
+        setIsPlaying(false);
+        return;
+      }
 
-    if (!channel.streamUrl) {
-      return;
-    }
+      tracksRef.current =
+        tracks;
 
-    try {
-      audio.pause();
+      trackIndexRef.current =
+        0;
 
-      audio.src =
-        channel.streamUrl;
-
-      audio.volume = volume;
-      audio.currentTime = 0;
-
-      setCurrentTime(0);
-      setDuration(0);
-      setIsPlaying(false);
-
-      audio.load();
-
-      await new Promise<void>(
-        (resolve) => {
-          if (audio.readyState >= 2) {
-            resolve();
-            return;
-          }
-
-          const handleCanPlay = () => {
-            audio.removeEventListener(
-              "canplay",
-              handleCanPlay
-            );
-
-            resolve();
-          };
-
-          audio.addEventListener(
-            "canplay",
-            handleCanPlay,
-            {
-              once: true,
-            }
-          );
-        }
+      await playTrack(
+        tracks[0],
+        true
       );
-
-      await audio.play();
-
-      setIsPlaying(true);
-    } catch (error) {
-      console.error(
-        "AUDIO KANALWECHSEL FEHLER:",
-        error
-      );
-
-      setIsPlaying(false);
-    }
-  };
+    };
 
   const play = async (
     channel?: Channel
   ) => {
-    const audio = audioRef.current;
+    const audio =
+      audioRef.current;
 
     if (!audio) {
       console.error(
         "Audio Element nicht verfügbar."
       );
+
       return;
     }
 
@@ -280,34 +572,33 @@ export function AudioPlayerProvider({
       console.error(
         "Kein Kanal ausgewählt."
       );
+
       return;
     }
-
-    if (!target.streamUrl) {
-      console.error(
-        "Keine streamUrl vorhanden:",
-        target
-      );
-      return;
-    }
-
-    const expectedUrl =
-      new URL(
-        target.streamUrl,
-        window.location.href
-      ).href;
 
     if (
-      audio.currentSrc !==
-      expectedUrl
+      currentChannelRef.current
+        ?.id !== target.id
     ) {
-      await changeChannel(target);
+      await changeChannel(
+        target
+      );
+
+      return;
+    }
+
+    if (
+      !tracksRef.current.length
+    ) {
+      await changeChannel(
+        target
+      );
+
       return;
     }
 
     try {
       await audio.play();
-
       setIsPlaying(true);
     } catch (error) {
       console.error(
@@ -320,10 +611,6 @@ export function AudioPlayerProvider({
   };
 
   const pause = () => {
-    console.trace(
-      "!!! AUDIO PAUSE WIRD AUFGERUFEN !!!"
-    );
-
     const audio =
       audioRef.current;
 
@@ -332,7 +619,6 @@ export function AudioPlayerProvider({
     }
 
     audio.pause();
-
     setIsPlaying(false);
   };
 
@@ -420,6 +706,8 @@ export function AudioPlayerProvider({
         play,
         pause,
         toggle,
+        nextTrack,
+        previousTrack,
         setVolume,
         seek,
         audioRef,
