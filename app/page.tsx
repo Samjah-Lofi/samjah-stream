@@ -425,6 +425,33 @@ export default function HomePage() {
             >
               Login
             </Link>
+
+            <a
+              href="https://samjah-music.com/impressum/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-[#D89A3C]"
+            >
+              Impressum
+            </a>
+
+            <a
+              href="https://samjah-music.com/datenschutzerklaerung/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-[#D89A3C]"
+            >
+              Datenschutz
+            </a>
+
+            <a
+              href="https://samjah-music.com/agb/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-[#D89A3C]"
+            >
+              AGB
+            </a>
           </div>
         </div>
 

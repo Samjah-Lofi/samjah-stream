@@ -21,6 +21,15 @@ export default function Footer() {
         >
           Datenschutz
         </a>
+
+        <a
+          href="https://samjah-music.com/agb/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-white"
+        >
+          AGB
+        </a>
       </div>
     </footer>
   );
