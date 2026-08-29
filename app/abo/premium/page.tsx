@@ -22,9 +22,10 @@ const features = [
 export default function PremiumPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isBusiness, setIsBusiness] = useState(false);
 
   const handleCheckout = async () => {
-    if (loading) {
+    if (loading || !isBusiness) {
       return;
     }
 
@@ -179,6 +180,28 @@ export default function PremiumPage() {
               </div>
             </div>
 
+            <div className="mt-8 rounded-2xl border border-[#3A2B22] bg-[#0F0C0A] p-5">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={isBusiness}
+                  onChange={(event) =>
+                    setIsBusiness(
+                      event.target.checked
+                    )
+                  }
+                  className="mt-1 h-5 w-5 shrink-0 accent-[#D89A3C]"
+                />
+
+                <span className="text-sm leading-6 text-[#BFAE98]">
+                  Ich bestätige, dass ich den Vertrag
+                  als Unternehmer im Sinne des § 14 BGB
+                  zu gewerblichen bzw. beruflichen Zwecken
+                  abschließe.
+                </span>
+              </label>
+            </div>
+
             {error && (
               <div className="mt-6 rounded-2xl border border-red-900/50 bg-red-950/20 px-5 py-4 text-sm leading-6 text-red-300">
                 {error}
@@ -188,7 +211,10 @@ export default function PremiumPage() {
             <button
               type="button"
               onClick={handleCheckout}
-              disabled={loading}
+              disabled={
+                loading ||
+                !isBusiness
+              }
               className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#D89A3C] px-6 py-5 font-bold text-[#120D09] transition hover:bg-[#E9B65A] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <CreditCard size={20} />
