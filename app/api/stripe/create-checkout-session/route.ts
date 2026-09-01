@@ -8,6 +8,19 @@ const stripe = new Stripe(
 );
 
 export async function POST() {
+  // Stripe Checkout vorübergehend deaktiviert.
+  // Die bestehende Abo- und Supabase-Logik bleibt unverändert.
+  return NextResponse.json(
+    {
+      error:
+        "Der Abschluss eines Premium-Abonnements ist derzeit vorübergehend deaktiviert.",
+    },
+    {
+      status: 503,
+    }
+  );
+
+  /*
   try {
     const supabase = await createClient();
 
@@ -202,4 +215,5 @@ export async function POST() {
       }
     );
   }
+  */
 }
