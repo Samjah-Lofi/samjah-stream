@@ -9,6 +9,7 @@ import {
   Music2,
   Heart,
   User,
+  FileText,
   Settings,
   Menu,
   X,
@@ -38,6 +39,11 @@ const links = [
     href: "/dashboard/konto",
     icon: User,
     text: "Konto",
+  },
+  {
+    href: "/dashboard/dokumente",
+    icon: FileText,
+    text: "Dokumente",
   },
   {
     href: "/dashboard/einstellungen",

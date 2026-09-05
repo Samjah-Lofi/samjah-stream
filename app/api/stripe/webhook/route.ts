@@ -17,6 +17,30 @@ const supabaseAdmin = createClient(
   }
 );
 
+function toIsoDate(
+  timestamp: number | null | undefined
+): string | null {
+  return typeof timestamp === "number"
+    ? new Date(timestamp * 1000).toISOString()
+    : null;
+}
+
+function getSubscriptionPeriod(
+  subscription: Stripe.Subscription
+) {
+  const item = subscription.items.data[0] as
+    | (Stripe.SubscriptionItem & {
+        current_period_start?: number;
+        current_period_end?: number;
+      })
+    | undefined;
+
+  return {
+    periodStart: toIsoDate(item?.current_period_start),
+    periodEnd: toIsoDate(item?.current_period_end),
+  };
+}
+
 export async function POST(request: Request) {
   const signature =
     request.headers.get("stripe-signature");
@@ -88,6 +112,31 @@ export async function POST(request: Request) {
             ? checkoutSession.subscription
             : null;
 
+        let periodStart: string | null = null;
+        let periodEnd: string | null = null;
+
+        if (subscriptionId) {
+          const subscription =
+            await stripe.subscriptions.retrieve(
+              subscriptionId
+            );
+
+          const period =
+            getSubscriptionPeriod(subscription);
+
+          periodStart = period.periodStart;
+          periodEnd = period.periodEnd;
+
+          console.log(
+            "STRIPE SUBSCRIPTION ZEITRAUM:",
+            {
+              subscriptionId,
+              periodStart,
+              periodEnd,
+            }
+          );
+        }
+
         const { data, error } =
           await supabaseAdmin
             .from("subscriptions")
@@ -102,6 +151,10 @@ export async function POST(request: Request) {
                 price_id:
                   process.env
                     .STRIPE_PREMIUM_PRICE_ID,
+                current_period_start:
+                  periodStart,
+                current_period_end:
+                  periodEnd,
                 cancel_at_period_end: false,
                 cancel_at: null,
                 canceled_at: null,
@@ -201,47 +254,25 @@ export async function POST(request: Request) {
           subscription.items.data[0]?.price?.id ??
           null;
 
-        const subscriptionData =
-          subscription as Stripe.Subscription & {
-            current_period_start?: number;
-            current_period_end?: number;
-            cancel_at?: number | null;
-            canceled_at?: number | null;
-          };
-
-        const periodStart =
-          typeof subscriptionData.current_period_start ===
-          "number"
-            ? new Date(
-                subscriptionData.current_period_start *
-                  1000
-              ).toISOString()
-            : null;
-
-        const periodEnd =
-          typeof subscriptionData.current_period_end ===
-          "number"
-            ? new Date(
-                subscriptionData.current_period_end *
-                  1000
-              ).toISOString()
-            : null;
+        const {
+          periodStart,
+          periodEnd,
+        } =
+          getSubscriptionPeriod(subscription);
 
         const cancelAt =
-          typeof subscriptionData.cancel_at ===
+          typeof subscription.cancel_at ===
           "number"
             ? new Date(
-                subscriptionData.cancel_at *
-                  1000
+                subscription.cancel_at * 1000
               ).toISOString()
             : null;
 
         const canceledAt =
-          typeof subscriptionData.canceled_at ===
+          typeof subscription.canceled_at ===
           "number"
             ? new Date(
-                subscriptionData.canceled_at *
-                  1000
+                subscription.canceled_at * 1000
               ).toISOString()
             : null;
 
@@ -293,6 +324,10 @@ export async function POST(request: Request) {
           "SUBSCRIPTION AKTUALISIERT:",
           userId,
           subscription.status,
+          "period_start:",
+          periodStart,
+          "period_end:",
+          periodEnd,
           "cancel_at:",
           cancelAt,
           "canceled_at:",
@@ -361,27 +396,19 @@ export async function POST(request: Request) {
           );
         }
 
-        const subscriptionData =
-          subscription as Stripe.Subscription & {
-            cancel_at?: number | null;
-            canceled_at?: number | null;
-          };
-
         const cancelAt =
-          typeof subscriptionData.cancel_at ===
+          typeof subscription.cancel_at ===
           "number"
             ? new Date(
-                subscriptionData.cancel_at *
-                  1000
+                subscription.cancel_at * 1000
               ).toISOString()
             : null;
 
         const canceledAt =
-          typeof subscriptionData.canceled_at ===
+          typeof subscription.canceled_at ===
           "number"
             ? new Date(
-                subscriptionData.canceled_at *
-                  1000
+                subscription.canceled_at * 1000
               ).toISOString()
             : null;
 

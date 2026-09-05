@@ -21,20 +21,21 @@ export default async function DashboardLayout({
   const supabase = await createClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (userError || !user) {
     redirect("/login");
   }
 
-  const isSuperuser = session.user.id === SUPERUSER_ID;
+  const isSuperuser = user.id === SUPERUSER_ID;
 
   if (!isSuperuser) {
     const { data: subscription, error } = await supabase
       .from("subscriptions")
       .select("plan, status")
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (error) {
