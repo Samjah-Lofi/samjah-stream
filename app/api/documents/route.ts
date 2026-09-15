@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
+const SUPERUSER_ID = "837b76e4-db6a-4bb6-a37f-9ed7e438900e";
+
 type Subscription = {
   plan: "free" | "premium";
   status: "active" | "cancelled" | "canceled" | "expired" | "past_due";
@@ -36,12 +38,16 @@ function formatDate(value: string | null): string {
   });
 }
 
-function getDocumentNumber(): string {
+function getDocumentNumber(isDemo: boolean): string {
   const year = new Date().getFullYear();
   const randomPart = crypto
     .randomBytes(4)
     .toString("hex")
     .toUpperCase();
+
+  if (isDemo) {
+    return `SMJ-DEMO-${year}-${randomPart}`;
+  }
 
   return `SMJ-N-${year}-${randomPart}`;
 }
@@ -52,86 +58,107 @@ async function getOrCreateLicenseDocument(
 ): Promise<
   | {
       document: LicenseDocument;
+      isDemo: boolean;
       error: null;
     }
   | {
       document: null;
+      isDemo: false;
       error: NextResponse;
     }
 > {
-  const {
-    data: subscriptionData,
-    error: subscriptionError,
-  } = await supabase
-    .from("subscriptions")
-    .select(
-      "plan, status, current_period_start, current_period_end, cancel_at, canceled_at"
-    )
-    .eq("user_id", userId)
-    .maybeSingle();
+  const isDemo = userId === SUPERUSER_ID;
 
-  if (subscriptionError) {
-    console.error(
-      "ABO DATEN KONNTEN NICHT GELADEN WERDEN:",
-      subscriptionError
-    );
+  let validFrom: string;
+  let validUntil: string | null;
+  let calculatedStatus: LicenseDocument["status"];
 
-    return {
-      document: null,
-      error: NextResponse.json(
-        {
-          error: "Abo-Daten konnten nicht geladen werden.",
-        },
-        { status: 500 }
-      ),
-    };
+  if (isDemo) {
+    /*
+     * Der Superuser erhält einen dauerhaften Demo-Nutzungsnachweis.
+     * Es ist kein Stripe-Abo und keine Subscription erforderlich.
+     */
+    validFrom = new Date().toISOString();
+    validUntil = null;
+    calculatedStatus = "active";
+  } else {
+    const {
+      data: subscriptionData,
+      error: subscriptionError,
+    } = await supabase
+      .from("subscriptions")
+      .select(
+        "plan, status, current_period_start, current_period_end, cancel_at, canceled_at"
+      )
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (subscriptionError) {
+      console.error(
+        "ABO DATEN KONNTEN NICHT GELADEN WERDEN:",
+        subscriptionError
+      );
+
+      return {
+        document: null,
+        isDemo: false,
+        error: NextResponse.json(
+          {
+            error: "Abo-Daten konnten nicht geladen werden.",
+          },
+          { status: 500 }
+        ),
+      };
+    }
+
+    const subscription =
+      subscriptionData as Subscription | null;
+
+    const hasActiveSubscription =
+      subscription?.plan === "premium" &&
+      subscription?.status === "active";
+
+    if (!hasActiveSubscription) {
+      return {
+        document: null,
+        isDemo: false,
+        error: NextResponse.json(
+          {
+            error:
+              "Ein Nutzungsnachweis ist nur bei einem aktiven Premium-Abo verfügbar.",
+          },
+          { status: 403 }
+        ),
+      };
+    }
+
+    if (!subscription.current_period_start) {
+      return {
+        document: null,
+        isDemo: false,
+        error: NextResponse.json(
+          {
+            error:
+              "Für das aktuelle Abo ist noch kein Startdatum verfügbar.",
+          },
+          { status: 409 }
+        ),
+      };
+    }
+
+    validFrom = subscription.current_period_start;
+
+    validUntil =
+      subscription.cancel_at ||
+      subscription.current_period_end ||
+      null;
+
+    calculatedStatus =
+      validUntil &&
+      new Date(validUntil).getTime() < Date.now()
+        ? "expired"
+        : "active";
   }
-
-  const subscription =
-    subscriptionData as Subscription | null;
-
-  const hasActiveSubscription =
-    subscription?.plan === "premium" &&
-    subscription?.status === "active";
-
-  if (!hasActiveSubscription) {
-    return {
-      document: null,
-      error: NextResponse.json(
-        {
-          error:
-            "Ein Nutzungsnachweis ist nur bei einem aktiven Premium-Abo verfügbar.",
-        },
-        { status: 403 }
-      ),
-    };
-  }
-
-  if (!subscription.current_period_start) {
-    return {
-      document: null,
-      error: NextResponse.json(
-        {
-          error:
-            "Für das aktuelle Abo ist noch kein Startdatum verfügbar.",
-        },
-        { status: 409 }
-      ),
-    };
-  }
-
-  const validFrom = subscription.current_period_start;
-
-  const validUntil =
-    subscription.cancel_at ||
-    subscription.current_period_end ||
-    null;
-
-  const calculatedStatus =
-    validUntil &&
-    new Date(validUntil).getTime() < Date.now()
-      ? "expired"
-      : "active";
 
   const {
     data: documentData,
@@ -154,6 +181,7 @@ async function getOrCreateLicenseDocument(
 
     return {
       document: null,
+      isDemo: false,
       error: NextResponse.json(
         {
           error:
@@ -174,7 +202,7 @@ async function getOrCreateLicenseDocument(
     } = await supabase
       .from("license_documents")
       .insert({
-        document_number: getDocumentNumber(),
+        document_number: getDocumentNumber(isDemo),
         user_id: userId,
         valid_from: validFrom,
         valid_until: validUntil,
@@ -193,6 +221,7 @@ async function getOrCreateLicenseDocument(
 
       return {
         document: null,
+        isDemo: false,
         error: NextResponse.json(
           {
             error:
@@ -205,6 +234,13 @@ async function getOrCreateLicenseDocument(
 
     document = createdDocument as LicenseDocument;
   } else {
+    /*
+     * Beim Demo-Dokument halten wir den Nachweis dauerhaft aktiv
+     * und setzen das Gültigkeitsdatum bei jedem Abruf auf den
+     * aktuellen Zeitpunkt.
+     *
+     * Bei normalen Kunden bleibt die bestehende Abo-Logik bestehen.
+     */
     const needsUpdate =
       document.valid_from !== validFrom ||
       document.valid_until !== validUntil ||
@@ -237,6 +273,7 @@ async function getOrCreateLicenseDocument(
 
         return {
           document: null,
+          isDemo: false,
           error: NextResponse.json(
             {
               error:
@@ -254,6 +291,7 @@ async function getOrCreateLicenseDocument(
 
   return {
     document,
+    isDemo,
     error: null,
   };
 }
@@ -302,6 +340,7 @@ export async function GET(request: Request) {
     }
 
     const document = result.document;
+    const isDemo = result.isDemo;
 
     if (format === "json") {
       return NextResponse.json({
@@ -395,7 +434,9 @@ export async function GET(request: Request) {
     );
 
     page.drawText(
-      "Nachweis über den bestehenden Nutzungszugang",
+      isDemo
+        ? "Demo-Nachweis für Präsentationszwecke"
+        : "Nachweis über den bestehenden Nutzungszugang",
       {
         x: 55,
         y: 690,
@@ -560,38 +601,73 @@ export async function GET(request: Request) {
       }
     );
 
-    page.drawText(
-      "Dieser Nachweis bestätigt den bestehenden Zugang",
-      {
-        x: 55,
-        y: 347,
-        size: 11,
-        font: regularFont,
-        color: mutedColor,
-      }
-    );
+    if (isDemo) {
+      page.drawText(
+        "Dieser Nachweis dient der Präsentation",
+        {
+          x: 55,
+          y: 347,
+          size: 11,
+          font: regularFont,
+          color: mutedColor,
+        }
+      );
 
-    page.drawText(
-      "des oben genannten Kunden zur Samjah Music Library",
-      {
-        x: 55,
-        y: 329,
-        size: 11,
-        font: regularFont,
-        color: mutedColor,
-      }
-    );
+      page.drawText(
+        "der Samjah Music Library und bestätigt",
+        {
+          x: 55,
+          y: 329,
+          size: 11,
+          font: regularFont,
+          color: mutedColor,
+        }
+      );
 
-    page.drawText(
-      "im Rahmen des gebuchten Premium-Abonnements.",
-      {
-        x: 55,
-        y: 311,
-        size: 11,
-        font: regularFont,
-        color: mutedColor,
-      }
-    );
+      page.drawText(
+        "keine tatsächliche Kundenlizenz.",
+        {
+          x: 55,
+          y: 311,
+          size: 11,
+          font: regularFont,
+          color: mutedColor,
+        }
+      );
+    } else {
+      page.drawText(
+        "Dieser Nachweis bestätigt den bestehenden Zugang",
+        {
+          x: 55,
+          y: 347,
+          size: 11,
+          font: regularFont,
+          color: mutedColor,
+        }
+      );
+
+      page.drawText(
+        "des oben genannten Kunden zur Samjah Music Library",
+        {
+          x: 55,
+          y: 329,
+          size: 11,
+          font: regularFont,
+          color: mutedColor,
+        }
+      );
+
+      page.drawText(
+        "im Rahmen des gebuchten Premium-Abonnements.",
+        {
+          x: 55,
+          y: 311,
+          size: 11,
+          font: regularFont,
+          color: mutedColor,
+        }
+      );
+    }
 
     page.drawText(
       "Der Nachweis stellt keine behördliche oder sonstige",
@@ -648,7 +724,9 @@ export async function GET(request: Request) {
     );
 
     page.drawText(
-      "Dieser Nachweis wurde digital erstellt.",
+      isDemo
+        ? "Demo-Dokument – digital erstellt."
+        : "Dieser Nachweis wurde digital erstellt.",
       {
         x: 55,
         y: 82,
