@@ -33,6 +33,7 @@ type Subscription = {
     | "canceled"
     | "expired";
   cancel_at_period_end: boolean | null;
+  current_period_end: string | null;
 };
 
 export default function AboPage() {
@@ -65,7 +66,7 @@ export default function AboPage() {
       } = await supabase
         .from("subscriptions")
         .select(
-          "plan, status, cancel_at_period_end"
+          "plan, status, cancel_at_period_end, current_period_end"
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -84,6 +85,7 @@ export default function AboPage() {
           plan: "free",
           status: "active",
           cancel_at_period_end: false,
+          current_period_end: null,
         });
       }
 
@@ -93,13 +95,18 @@ export default function AboPage() {
     loadSubscription();
   }, [router]);
 
-  const isPremium =
+  const periodEnd =
+    subscription?.current_period_end
+      ? new Date(
+          subscription.current_period_end
+        )
+      : null;
+
+  const hasValidPremium =
     subscription?.plan === "premium" &&
-    (
-      subscription.status === "active" ||
-      subscription.status === "trialing" ||
-      subscription.status === "past_due"
-    );
+    subscription?.status === "active" &&
+    periodEnd !== null &&
+    periodEnd > new Date();
 
   const handleManageSubscription = async () => {
     if (openingPortal) {
@@ -171,7 +178,7 @@ export default function AboPage() {
 
           <div className="absolute right-10 top-10 flex items-center gap-2 rounded-full border border-[#D89A3C]/30 bg-[#D89A3C]/10 px-4 py-2 text-sm font-semibold text-[#D89A3C]">
             <Sparkles size={16} />
-            {isPremium ? "Aktiv" : "Premium"}
+            {hasValidPremium ? "Aktiv" : "Premium"}
           </div>
 
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2A201A]">
@@ -211,7 +218,7 @@ export default function AboPage() {
             </div>
           ) : (
             <>
-              {isPremium && (
+              {hasValidPremium && (
                 <div className="mt-8 rounded-2xl border border-[#D89A3C]/30 bg-[#D89A3C]/10 px-5 py-4">
                   <p className="font-semibold text-[#D89A3C]">
                     Dein Premium Abo ist aktiv.
@@ -223,6 +230,23 @@ export default function AboPage() {
                       Abrechnungszeitraums aus.
                     </p>
                   )}
+                </div>
+              )}
+
+              {!hasValidPremium && (
+                <div className="mt-8 rounded-2xl border border-[#3A2B22] bg-[#1A1513] px-5 py-4">
+                  <p className="font-semibold text-[#F5E9D8]">
+                    Dein Premium Abo ist derzeit nicht aktiv.
+                  </p>
+
+                  {subscription?.current_period_end &&
+                    periodEnd &&
+                    periodEnd <= new Date() && (
+                      <p className="mt-1 text-sm leading-6 text-[#BFAE98]">
+                        Dein bisheriger Abrechnungszeitraum ist
+                        abgelaufen.
+                      </p>
+                    )}
                 </div>
               )}
 
@@ -256,7 +280,7 @@ export default function AboPage() {
                 </div>
               )}
 
-              {isPremium ? (
+              {hasValidPremium ? (
                 <>
                   <button
                     type="button"

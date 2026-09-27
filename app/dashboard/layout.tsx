@@ -37,7 +37,9 @@ export default async function DashboardLayout({
       error,
     } = await supabase
       .from("subscriptions")
-      .select("plan, status")
+      .select(
+        "plan, status, current_period_end"
+      )
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -50,11 +52,24 @@ export default async function DashboardLayout({
       redirect("/abo");
     }
 
-    const hasPremium =
-      subscription?.plan === "premium" &&
-      subscription?.status === "active";
+    const now = new Date();
 
-    if (!hasPremium) {
+    const periodEnd =
+      subscription?.current_period_end
+        ? new Date(
+            subscription.current_period_end
+          )
+        : null;
+
+    const hasValidPremium =
+      subscription?.plan === "premium" &&
+      subscription?.status === "active" &&
+      (
+        !periodEnd ||
+        periodEnd > now
+      );
+
+    if (!hasValidPremium) {
       redirect("/abo");
     }
   }
