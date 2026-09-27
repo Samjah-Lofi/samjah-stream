@@ -32,7 +32,10 @@ export default async function DashboardLayout({
   const isSuperuser = user.id === SUPERUSER_ID;
 
   if (!isSuperuser) {
-    const { data: subscription, error } = await supabase
+    const {
+      data: subscription,
+      error,
+    } = await supabase
       .from("subscriptions")
       .select("plan, status")
       .eq("user_id", user.id)

@@ -11,6 +11,7 @@ import {
 
 import type { Channel } from "../types/channel";
 import { createClient } from "../lib/supabase/client";
+import { usePlayer } from "./PlayerContext";
 
 type Track = {
   id: number;
@@ -58,6 +59,7 @@ export function AudioPlayerProvider({
   children: ReactNode;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+
   const currentChannelRef =
     useRef<Channel | null>(null);
 
@@ -78,6 +80,8 @@ export function AudioPlayerProvider({
 
   const [duration, setDuration] =
     useState(0);
+
+  const { setCurrentChannel } = usePlayer();
 
   const supabase = createClient();
 
@@ -290,7 +294,8 @@ export function AudioPlayerProvider({
             id: row.id,
             catalog_number:
               row.catalog_number,
-            title: row.title,
+            title:
+              row.title,
             duration_seconds:
               row.duration_seconds,
             audio_path:
@@ -321,17 +326,206 @@ export function AudioPlayerProvider({
       return tracks;
     };
 
+  const loadChannels =
+    async (): Promise<Channel[]> => {
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("channels")
+        .select("*")
+        .order("id", {
+          ascending: true,
+        });
+
+      if (error) {
+        console.error(
+          "CHANNELS LADEN FEHLER:",
+          error
+        );
+
+        return [];
+      }
+
+      const mappedChannels: Channel[] =
+        (data ?? []).map(
+          (channel) => ({
+            id: channel.id,
+            slug: channel.slug,
+            title: channel.title,
+            description:
+              channel.description,
+            longDescription:
+              channel.long_description,
+            image: channel.image,
+            streamUrl:
+              channel.stream_url,
+            duration:
+              channel.duration,
+            tracks:
+              channel.tracks,
+            featured:
+              channel.featured,
+            perfectFor:
+              channel.perfect_for ?? [],
+            tags:
+              channel.tags ?? [],
+          })
+        );
+
+      return mappedChannels;
+    };
+
+  const nextChannel = async () => {
+    const currentChannel =
+      currentChannelRef.current;
+
+    if (!currentChannel) {
+      console.log(
+        "NEXT CHANNEL: KEIN AKTUELLER CHANNEL"
+      );
+
+      return;
+    }
+
+    console.log(
+      "CHANNEL WECHSEL WIRD GESUCHT:",
+      currentChannel.title,
+      "ID:",
+      currentChannel.id
+    );
+
+    const availableChannels =
+      await loadChannels();
+
+    if (!availableChannels.length) {
+      console.error(
+        "NEXT CHANNEL: KEINE CHANNELS GELADEN"
+      );
+
+      setIsPlaying(false);
+      return;
+    }
+
+    const currentChannelIndex =
+      availableChannels.findIndex(
+        (channel) =>
+          channel.id ===
+          currentChannel.id
+      );
+
+    if (
+      currentChannelIndex === -1
+    ) {
+      console.error(
+        "AKTUELLER CHANNEL NICHT IN SUPABASE GEFUNDEN:",
+        currentChannel
+      );
+
+      setIsPlaying(false);
+      return;
+    }
+
+    const nextChannelIndex =
+      (currentChannelIndex + 1) %
+      availableChannels.length;
+
+    const nextChannel =
+      availableChannels[
+        nextChannelIndex
+      ];
+
+    console.log(
+      `CHANNEL ENDE: "${currentChannel.title}" → "${nextChannel.title}"`
+    );
+
+    const tracks =
+      await loadChannelTracks(
+        nextChannel
+      );
+
+    if (!tracks.length) {
+      console.error(
+        `Keine Tracks für nächsten Channel gefunden: ${nextChannel.title}`
+      );
+
+      setIsPlaying(false);
+      return;
+    }
+
+    currentChannelRef.current =
+      nextChannel;
+
+    setCurrentChannel(
+      nextChannel
+    );
+
+    tracksRef.current =
+      tracks;
+
+    trackIndexRef.current =
+      0;
+
+    console.log(
+      "NEXT CHANNEL GELADEN:",
+      nextChannel.title,
+      "TRACKS:",
+      tracks.length,
+      "INDEX:",
+      trackIndexRef.current
+    );
+
+    await playTrack(
+      tracks[0],
+      true
+    );
+  };
+
   const nextTrack = async () => {
     const tracks =
       tracksRef.current;
 
+    console.log(
+      "NEXT TRACK:",
+      currentChannelRef.current?.title,
+      "INDEX:",
+      trackIndexRef.current,
+      "VON:",
+      tracks.length
+    );
+
     if (!tracks.length) {
+      console.log(
+        "NEXT TRACK: KEINE TRACKS GELADEN"
+      );
+
+      return;
+    }
+
+    if (
+      trackIndexRef.current >=
+      tracks.length - 1
+    ) {
+      console.log(
+        "LETZTER TRACK ERREICHT:",
+        currentChannelRef.current?.title,
+        "INDEX:",
+        trackIndexRef.current,
+        "LETZTER INDEX:",
+        tracks.length - 1
+      );
+
+      await nextChannel();
       return;
     }
 
     trackIndexRef.current =
-      (trackIndexRef.current + 1) %
-      tracks.length;
+      trackIndexRef.current + 1;
+
+    console.log(
+      "NÄCHSTER TRACK INDEX:",
+      trackIndexRef.current
+    );
 
     await playTrack(
       tracks[
@@ -381,6 +575,10 @@ export function AudioPlayerProvider({
 
     const handleEnded =
       async () => {
+        console.log(
+          "AUDIO ENDED EVENT"
+        );
+
         await nextTrack();
       };
 
@@ -522,6 +720,10 @@ export function AudioPlayerProvider({
     ) => {
       currentChannelRef.current =
         channel;
+
+      setCurrentChannel(
+        channel
+      );
 
       const tracks =
         await loadChannelTracks(

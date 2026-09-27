@@ -18,11 +18,19 @@ export default function PlayerControls() {
   } = useAudioPlayer();
 
   const handleNext = async () => {
+    console.log("PLAYER BUTTON: NEXT GEKLICKT");
+
     await nextTrack();
+
+    console.log("PLAYER BUTTON: NEXT AUSGEFÜHRT");
   };
 
   const handlePrevious = async () => {
+    console.log("PLAYER BUTTON: PREVIOUS GEKLICKT");
+
     await previousTrack();
+
+    console.log("PLAYER BUTTON: PREVIOUS AUSGEFÜHRT");
   };
 
   return (
