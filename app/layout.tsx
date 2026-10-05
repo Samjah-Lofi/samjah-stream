@@ -1,4 +1,5 @@
-﻿import type { Metadata } from "next";
+﻿
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -13,32 +14,40 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Samjah Music | Hintergrundmusik für deine Location",
+  metadataBase: new URL("https://www.samjah-music.com"),
+
+  title: "GEMA-freie Hintergrundmusik für Gastronomie | Samjah Music",
+
   description:
-    "Professionelle Hintergrundmusik und Atmosphären für Cafés, Restaurants, Hotels, Bars und Lounges.",
-  metadataBase: new URL("https://samjah-music.com"),
+    "Entdecke selbst produzierte Hintergrundmusik für Cafés, Restaurants, Bars und Hotels. Sechs Atmosphären für 19,90 € im Monat. Jetzt 30 Sekunden reinhören.",
+
+  alternates: {
+    canonical: "/",
+  },
+
   openGraph: {
-    title: "Samjah Music | Hintergrundmusik für deine Location",
+    title: "GEMA-freie Hintergrundmusik für Gastronomie | Samjah Music",
     description:
-      "Professionelle Hintergrundmusik und Atmosphären für Cafés, Restaurants, Hotels, Bars und Lounges.",
-    url: "https://samjah-music.com",
+      "Selbst produzierte Hintergrundmusik für Cafés, Restaurants, Bars und Hotels. Entdecke sechs Atmosphären für 19,90 € im Monat.",
+    url: "https://www.samjah-music.com/",
     siteName: "Samjah Music",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Samjah Music",
+        alt: "Samjah Music – Hintergrundmusik für Gastronomie",
       },
     ],
     locale: "de_DE",
     type: "website",
   },
+
   twitter: {
     card: "summary_large_image",
-    title: "Samjah Music | Hintergrundmusik für deine Location",
+    title: "GEMA-freie Hintergrundmusik für Gastronomie | Samjah Music",
     description:
-      "Professionelle Hintergrundmusik und Atmosphären für Cafés, Restaurants, Hotels, Bars und Lounges.",
+      "Selbst produzierte Hintergrundmusik für Cafés, Restaurants, Bars und Hotels. Sechs Atmosphären für 19,90 € im Monat.",
     images: ["/og-image.png"],
   },
 };

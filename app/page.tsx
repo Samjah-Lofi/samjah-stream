@@ -1,3 +1,4 @@
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -19,7 +20,8 @@ const atmospheres = [
   },
   {
     title: "Lunch Lounge",
-    description: "Sanfte Lounge Sounds für stilvolle Mittagspausen und Gespräche.",
+    description:
+      "Sanfte Lounge Sounds für stilvolle Mittagspausen und Gespräche.",
     image: "/covers/lunch-lounge.png",
   },
   {
@@ -47,7 +49,8 @@ const atmospheres = [
 const locations = [
   {
     title: "Cafés",
-    description: "Warme Atmosphären für Kaffee, Frühstück und gute Gespräche.",
+    description:
+      "Warme Atmosphären für Kaffee, Frühstück und gute Gespräche.",
     icon: Store,
   },
   {
@@ -97,14 +100,12 @@ export default function HomePage() {
             >
               Atmosphären
             </a>
-
             <a
               href="#locations"
               className="text-sm text-[#BFAE98] transition hover:text-[#F5E9D8]"
             >
               Für Locations
             </a>
-
             <a
               href="#premium"
               className="text-sm text-[#BFAE98] transition hover:text-[#F5E9D8]"
@@ -120,7 +121,6 @@ export default function HomePage() {
             >
               Anmelden
             </Link>
-
             <Link
               href={`${STREAM_URL}/register`}
               className="rounded-full bg-[#D89A3C] px-5 py-2.5 text-sm font-bold text-[#120D09] transition hover:bg-[#E9B65A]"
@@ -134,7 +134,7 @@ export default function HomePage() {
       <section className="relative min-h-screen">
         <Image
           src="/images/landing/hero.png"
-          alt="Samjah Music"
+          alt="Stilvolle Hintergrundmusik für Cafés, Restaurants und andere Locations"
           fill
           priority
           sizes="100vw"
@@ -158,9 +158,10 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-7 max-w-2xl text-lg leading-8 text-[#D6C6B4] sm:text-xl">
-              Professionelle Atmosphären für Cafés, Restaurants, Hotels, Bars
-              und Lounges. Entspannt, stilvoll und gemacht, um Räume
-              musikalisch zu begleiten.
+              Professionelle Hintergrundmusik für Cafés, Restaurants, Hotels,
+              Bars und Lounges. Entdecke sechs handverlesene Musikwelten für
+              unterschiedliche Tageszeiten und Stimmungen – für 19,90 € im
+              Monat.
             </p>
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -181,8 +182,8 @@ export default function HomePage() {
             </div>
 
             <div className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-sm text-[#BFAE98]">
-              <span>GEMA freie Musik</span>
-              <span>Professionelle Nutzung</span>
+              <span>Selbst produzierte Musik</span>
+              <span>Für gewerbliche Locations</span>
               <span>19,90 € / Monat</span>
             </div>
           </div>
@@ -202,7 +203,8 @@ export default function HomePage() {
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-[#BFAE98]">
             Gute Hintergrundmusik drängt sich nicht auf. Sie schafft
             Atmosphäre, unterstützt die Stimmung und lässt deinen Gästen Raum
-            für Gespräche, Essen und besondere Momente.
+            für Gespräche, Essen und besondere Momente. Samjah Music bietet
+            passende Klangwelten für den Alltag in Gastronomie und Hotellerie.
           </p>
         </div>
       </section>
@@ -242,7 +244,7 @@ export default function HomePage() {
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <Image
                     src={atmosphere.image}
-                    alt={atmosphere.title}
+                    alt={`${atmosphere.title} – Hintergrundmusik für gewerbliche Locations`}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover transition duration-500 group-hover:scale-105"
@@ -283,9 +285,9 @@ export default function HomePage() {
             </h2>
 
             <p className="mt-6 text-lg leading-8 text-[#BFAE98]">
-              Egal ob Kaffee am Morgen, Mittagessen mit Freunden oder ein
-              langer Abend an der Bar. Samjah passt sich der Stimmung deiner
-              Location an.
+              Ob Kaffee am Morgen, Mittagessen mit Freunden oder ein langer
+              Abend an der Bar: Samjah bietet Hintergrundmusik für Gastronomie
+              und Hotellerie, die sich an die Stimmung deiner Location anpasst.
             </p>
           </div>
 
@@ -349,7 +351,6 @@ export default function HomePage() {
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#D89A3C]/15">
                       <Check size={14} className="text-[#D89A3C]" />
                     </span>
-
                     {benefit}
                   </li>
                 ))}
@@ -373,9 +374,7 @@ export default function HomePage() {
                 19,90 €
               </div>
 
-              <div className="mt-2 text-[#8D7B68]">
-                pro Monat
-              </div>
+              <div className="mt-2 text-[#8D7B68]">pro Monat</div>
 
               <p className="mt-5 text-sm text-[#6F6257]">
                 Jederzeit kündbar.
@@ -427,27 +426,21 @@ export default function HomePage() {
             </Link>
 
             <a
-              href="https://samjah-music.com/impressum/"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="https://www.samjah-music.com/impressum/"
               className="transition hover:text-[#D89A3C]"
             >
               Impressum
             </a>
 
             <a
-              href="https://samjah-music.com/datenschutzerklaerung/"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="https://www.samjah-music.com/datenschutz/"
               className="transition hover:text-[#D89A3C]"
             >
               Datenschutz
             </a>
 
             <a
-              href="https://samjah-music.com/agb/"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="https://www.samjah-music.com/agb/"
               className="transition hover:text-[#D89A3C]"
             >
               AGB
