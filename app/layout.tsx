@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.samjah-music.com"),
 
-  title: "GEMA-freie Hintergrundmusik für Gastronomie | Samjah Music",
+  title: "Hintergrundmusik für Gastronomie | Samjah Music",
 
   description:
     "Entdecke selbst produzierte Hintergrundmusik für Cafés, Restaurants, Bars und Hotels. Sechs Atmosphären für 19,90 € im Monat. Jetzt 30 Sekunden reinhören.",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "GEMA-freie Hintergrundmusik für Gastronomie | Samjah Music",
+    title: "Hintergrundmusik für Gastronomie | Samjah Music",
     description:
       "Selbst produzierte Hintergrundmusik für Cafés, Restaurants, Bars und Hotels. Entdecke sechs Atmosphären für 19,90 € im Monat.",
     url: "https://www.samjah-music.com/",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "GEMA-freie Hintergrundmusik für Gastronomie | Samjah Music",
+    title: "Hintergrundmusik für Gastronomie | Samjah Music",
     description:
       "Selbst produzierte Hintergrundmusik für Cafés, Restaurants, Bars und Hotels. Sechs Atmosphären für 19,90 € im Monat.",
     images: ["/og-image.png"],
