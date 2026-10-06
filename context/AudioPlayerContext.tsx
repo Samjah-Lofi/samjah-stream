@@ -122,8 +122,8 @@ export function AudioPlayerProvider({
       setDuration(track.duration_seconds || 0);
       setIsPlaying(false);
 
-      audio.load();
-
+      // Listener vor load() registrieren, damit ein sehr schnelles canplay
+      // nicht zwischen load() und addEventListener verloren geht.
       await new Promise<void>((resolve, reject) => {
         const cleanup = () => {
           audio.removeEventListener("canplay", handleCanPlay);
@@ -146,6 +146,7 @@ export function AudioPlayerProvider({
         audio.addEventListener("error", handleError, {
           once: true,
         });
+        audio.load();
       });
 
       // Während des Ladens könnte ein anderer Track angefordert worden sein.
@@ -225,7 +226,14 @@ export function AudioPlayerProvider({
     }
 
     console.log(
-      `CHANNEL "${channel.title}": ${tracks.length} TRACKS GELADEN`
+      `CHANNEL "${channel.title}": ${tracks.length} TRACKS GELADEN`,
+      tracks.map((track, index) => ({
+        position: index + 1,
+        catalog: track.catalog_number,
+        id: track.id,
+        title: track.title,
+        audio_path: track.audio_path,
+      }))
     );
 
     return tracks;
@@ -359,9 +367,17 @@ export function AudioPlayerProvider({
 
       trackIndexRef.current += 1;
 
-      console.log("NÄCHSTER TRACK INDEX:", trackIndexRef.current);
+      const next = tracks[trackIndexRef.current];
+      console.log("NÄCHSTER TRACK WIRD GESTARTET:", {
+        position: trackIndexRef.current + 1,
+        total: tracks.length,
+        catalog: next.catalog_number,
+        id: next.id,
+        title: next.title,
+        audio_path: next.audio_path,
+      });
 
-      await playTrack(tracks[trackIndexRef.current], true);
+      await playTrack(next, true);
     } finally {
       advancingRef.current = false;
     }
