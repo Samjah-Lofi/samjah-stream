@@ -108,9 +108,22 @@ export function AudioPlayerProvider({
     if (requestId !== playRequestRef.current) return;
 
     if (!url) {
+      console.error("TRACK OHNE AUDIO-URL:", {
+        catalog: track.catalog_number,
+        id: track.id,
+        title: track.title,
+        audio_path: track.audio_path,
+      });
       setIsPlaying(false);
       return;
     }
+
+    console.log("TRACK AUDIO-PFAD:", {
+      catalog: track.catalog_number,
+      id: track.id,
+      title: track.title,
+      audio_path: track.audio_path,
+    });
 
     try {
       audio.pause();
@@ -157,6 +170,15 @@ export function AudioPlayerProvider({
 
         if (requestId === playRequestRef.current) {
           setIsPlaying(true);
+          console.log("TRACK WIEDERGABE GESTARTET:", {
+            catalog: track.catalog_number,
+            id: track.id,
+            title: track.title,
+            audio_path: track.audio_path,
+            currentSrc: audio.currentSrc,
+            duration: audio.duration,
+            paused: audio.paused,
+          });
         }
       }
     } catch (error) {
