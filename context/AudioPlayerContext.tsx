@@ -456,6 +456,23 @@ export function AudioPlayerProvider({
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
+
+      // Diagnose: tatsächliches Audio-Ende mit Browser-Zeit erfassen.
+      if (
+        Number.isFinite(audio.duration) &&
+        audio.duration > 0 &&
+        audio.duration - audio.currentTime <= 2 &&
+        audio.duration - audio.currentTime >= 0
+      ) {
+        console.log("AUDIO NAHE DATEIENDE:", {
+          currentTime: audio.currentTime,
+          duration: audio.duration,
+          remaining: audio.duration - audio.currentTime,
+          paused: audio.paused,
+          ended: audio.ended,
+          currentSrc: audio.currentSrc,
+        });
+      }
     };
 
     const handleError = () => {
