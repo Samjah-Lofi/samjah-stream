@@ -98,6 +98,17 @@ export function AudioPlayerProvider({
     track: Track,
     shouldPlay = true
   ): Promise<void> => {
+    console.trace("PLAY_TRACK AUFRUF:", {
+      catalog: track.catalog_number,
+      id: track.id,
+      title: track.title,
+      shouldPlay,
+      currentTimeBefore: audioRef.current?.currentTime,
+      currentSrcBefore: audioRef.current?.currentSrc,
+      trackIndex: trackIndexRef.current,
+      channel: currentChannelRef.current?.title,
+    });
+
     const audio = audioRef.current;
 
     if (!audio) return;
@@ -438,7 +449,15 @@ export function AudioPlayerProvider({
     const handlePause = () => setIsPlaying(false);
 
     const handleEnded = async () => {
-      console.log("AUDIO ENDED EVENT");
+      console.log("AUDIO ENDED EVENT:", {
+        currentTime: audio.currentTime,
+        duration: audio.duration,
+        ended: audio.ended,
+        catalogIndex: trackIndexRef.current,
+        currentTrack: tracksRef.current[trackIndexRef.current]?.catalog_number,
+        channel: currentChannelRef.current?.title,
+        timestamp: new Date().toISOString(),
+      });
       await nextTrack();
     };
 
